@@ -1,0 +1,13 @@
+Nessus
+Nessus se divise en deux parties : nessusd qui est un daemon (serveur) exécutant les requêtes ainsi que la communication avec la cible, et nessus, une application client qui récupère les données et analyse le résultat.
+
+Nessus opère typiquement de la façon suivante :
+
+- 1. lancement d’un « scan » des ports (avec nmap, ce qui est déconseillé pour des raisons de performance, amap ou l’un des quatre port scanners internes)
+
+* si un port ouvert est trouvé, Nessus tente diverses attaques décrites dans le langage de script NASL (Nessus Attack Scripting Language)
+
+- 2. récupération des données sous divers formats (Web, XML, HTML, LaTeX)
+- 3. analyse du résultat
+
+Les attaques et tests de Nessus sont relativement verbeux et intrusifs et peuvent conduire à des plantages de la machine attaquée ou des services concernés. Il est possible de désactiver les tests les plus dangereux. Nessus peut également analyser d’autres paramètres de sécurité comme la version du système d’exploitation ou faire un audit des mots de passe via une attaque par dictionnaire ou une recherche exhaustive.

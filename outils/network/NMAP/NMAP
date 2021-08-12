@@ -1,0 +1,167 @@
+NMAP Guide
+Basic scan to see what ports have a valid service running on them:
+
+nmap {host} nmap -v {host}
+
+Pass the
+-v
+flag to print a little more information.
+
+Basic scan to just see what ports are open/closed/filtered, but will not actually test the port for a service running:
+
+nmap --top-ports {number of ports} {host}
+
+Scanning a range of IP addresses or a subnet:
+
+nmap {host} 192.168.1.2 192.168.1.3 nmap {host},2,3 # multiple nmap {host}-20 # range
+
+nmap 192.168.1.* # range nmap 192.168.1.0/24 # subnet
+
+Scanning and reading from a list of hosts
+
+input.txt
+host1.com host2.com {host}
+
+nmap -iL input.txt
+
+Exclusions:
+
+nmap 192.168.1.0/24 --exclude 192.168.1.5 nmap 192.168.1.0/24 --exclude 192.168.1.5,192.168.1.254
+
+OR exclude list from a file called exclude.txt
+
+nmap -iL /tmp/scanlist.txt --excludefile exclude.txt
+OS Detection of services:
+
+nmap -A -v {host}
+
+Firewall protection of the host:
+
+nmap -sA -v {host}
+
+Scanning a host protected by a firewall (very useful):
+
+nmap -PN -v {host}
+
+Scanning a IPv6 host:
+
+nmap -6 IPv6-Address-Here nmap -6 2607:f0d0:1002:51::4 nmap -v A -6 2607:f0d0:1002:51::4
+
+Scan a network and find out which servers and devices are up and running
+
+nmap -sP 192.168.1.0/24
+
+Scanning a host quickly:
+
+nmap -F {host}
+
+ONLY show open ports
+
+nmap -F --open {host}
+Print packet trace on a scan:
+
+nmap --packet-trace {host}
+
+Doing a full nmap scan of the host requires root privelages. To invoke run this:
+
+sudo nmap -v -sV -sC -O {host}
+
+This will generate a full report of services and attempt to identify OS. Good for finding admin panels and such running on hidden ports.
+
+Show host interfaces and routes:
+
+nmap --iflist {host}
+
+Scanning specific ports:
+
+nmap -p 80 {host}
+
+Scan TCP port 80
+nmap -p T:80 {host}
+
+Scan UDP port 53
+nmap -p U:53 {host}
+
+Scan two ports
+nmap -p 80,443 {host}
+
+Scan port range
+nmap -p 80-200 {host}
+
+Combination port scan
+nmap -p U:53,111,137,T:21-25,80,139,8080 {host} nmap -v -sU -sT -p U:53,111,137,T:21-25,80,139,8080 {host}
+
+Scan all ports with * wildcard
+nmap -p "*" {host}
+
+Scan top ports
+nmap --top-ports {number of ports} {host} nmap --top-ports {number of ports} {host}
+
+Scanning for a remote operating system:
+
+nmap -O -v {host}
+
+Scanning for remote services (server/daemon):
+
+nmap -sV -v {host}
+
+Scanning a host using TCP ACK (PA) and TCP Syn (PS) ping. Use this when a firewall is blocking standard ICMP pings:
+
+nmap -PS {host}
+
+Scanning a host using IP protocol ping:
+
+nmap -PO {host}
+
+Scanning a host using UDP ping. This scan bypasses firewalls and filters that only screen TCP:
+
+nmap -PU {host}
+
+Scanning a host for the most commonly used TCP ports using TCP SYN Scan:
+
+Stealth scan
+nmap -sS {host}
+
+Find the most commonly used TCP ports using TCP connect scan (warning: no stealth scan)
+nmap -sT {host}
+
+Find the most commonly used TCP ports using TCP ACK scan
+nmap -sA {host}
+
+Find the most commonly used TCP ports using TCP Window scan
+nmap -sW {host}
+
+Find the most commonly used TCP ports using TCP Maimon scan
+nmap -sM {host}
+
+Scanning a host for UDP services (UDP scan):
+
+nmap -sU {host}
+
+Scanning a host for IP protocol, this allows you to determine which IP protocols are supported by the host:
+
+nmap -sO {host}
+
+Scanning a firewall for security weaknesses:
+
+TCP Null Scan to trigger firewall to generate a response
+nmap -sN {host}
+
+TCP Fin scan to check firewall
+nmap -sF {host}
+
+TCP Xmas scan to check firewall
+nmap -sX {host}
+
+Cloaking a scan with decoys
+
+nmap -n -Ddecoy-ip1,decoy-ip2,your-own-ip,decoy-ip3,decoy-ip4 {host}
+
+Scanning a firewall for MAC address spoofing:
+
+Spoof your MAC address
+nmap --spoof-mac {your-mac-address} {host}
+
+You can pass any other flags here as well
+-v -O
+etc…

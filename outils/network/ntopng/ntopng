@@ -1,0 +1,23 @@
+ntopng
+Introduction
+ntopng® is a web-based network traffic monitoring application released under GPLv3. It is the new incarnation of the original ntop written in 1998, and now revamped in terms of performance, usability, and features.
+
+While you can read more about ntopng on the ntop web site (http://www.ntop.org), we suggest you to start reading the https://github.com/ntop/ntopng/blob/dev/doc/README.md file for learning how to compile and use ntopng.
+
+If instead of source code you prefer to use a pre-built package, please go to http://packages.ntop.org
+
+We build binary packages for the following platforms:
+
+Ubuntu Linux Server x64
+CentOS/RedHat Linux x64
+Windows x64
+RaspberryPI/BeagleBoard ARM (based on Ubuntu Linux)
+Enjoy.
+
+Documentation
+If you want to learn more about ntopng please visit the https://www.ntop.org/guides/ntopng/ and the https://www.ntop.org/guides/ntopng/api/index.html.
+
+Details
+For more information about ntopng, please visit https://www.ntop.org/products/traffic-analysis/ntop/
+
+ntopng is a registered trademark in the US and EU.
