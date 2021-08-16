@@ -1,0 +1,40 @@
+L’énoncé fournit presque la méthode de résolution. Il suffit de regarder les lettres sur le clavier d’un téléphone mobile et de prendre celle qui correspond au nombre de répétitions dans chaque groupe de chiffres :
+
+222 -> C
+33  -> E
+555 -> L
+555 -> L
+7   -> P
+44  -> H
+666 -> O
+66  -> N
+33  -> E
+
+Flag :
+cellphone
+
+(en minuscules)
+
+ou
+
+
+
+La piste permettant de démarrer ce challenge est dans le titre !
+
+Nous savons que cette suite de chiffres est un message caché en rapport avec un téléphone.
+Chaque nombre est séparé par un caractère -, pouvant faire penser à un temps d’arrêt entre différentes touches.
+
+En se renseignant sur les différentes méthodes pour dissimuler un message avec un mobile (n’oublions par que le challenge date de 2011), on en remarque deux qui attirent notre attention :
+Le code T9 et le code Multi-Tap
+
+Le T9 remplace une lettre par le code de la touche correspondante, sur un clavier de téléphone portable. (Ex : ROOT —> 7-6-6-8)
+Le Multi-Tap quant-à lui remplace une lettre par un chiffre répété en fonction du code de la touche correspondante sur le pavé numérique du téléphone portable. (Ex : ROOT —> 777-666-666-8)
+
+    Chaque répétition correspond à une pression sur la touche pour obtenir la lettre voulue.
+
+On en déduit que notre code est un Multi-Tap !
+
+Nous pouvons utiliser notre site favori : https://www.dcode.fr/code-multitap-abc
+
+On retrouve notre flag :
+222-33-555-555-7-44-666-66-33 --> C[...]E

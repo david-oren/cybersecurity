@@ -1,0 +1,55 @@
+La cartographie de code source a été laissée activée en production, elle est indiquée de manière classique dans le fichier http://challenge01.root-me.org/web-client/ch27/static/js/app.a92c5074dafac0cb6365.js :
+//# sourceMappingURL=app.a92c5074dafac0cb6365.js.map
+
+Étrangement, avec Firefox, toute la cartographie n’est pas affichée dans les outils de développement (onglet "Débogueur"), et le fichier où le flag est présent n’apparait pas.
+Pour le retrouver, il faut donc fouiller directement dans le fichier http://challenge01.root-me.org/web-client/ch27/static/js/app.a92c5074dafac0cb6365.js.map.
+Après un rapide parcours du fichier ou un "ctrl+F flag", on retrouve le flag recherché.
+
+ou
+
+Pour ce challenge, on commence par inspecter les sources avec notre navigateur préféré (ctrl+shift+i). On remarque que l’application utilise Webpack.
+
+Webpack permet de packager les sources d’une application utilisant Javascript (https://webpack.js.org/). Ici l’application utilise Vue.js.
+
+On inspecte alors webpack :// et on remarque que les sources map n’ont pas été désactivé lors de la mise en production. En effet nous avons accès aux sources de l’application vue.js non minifié. On peut donc lire le code facilement incluant les commentaires du développeur.
+En explorant ces sources on remarque un fichier qui semble intéressant —> webpack :///src/components/YouWillNotFoundThisRouteBecauseItIsHidden.vue.
+
+Dans le contenu de ce fichier on remarque un commentaire du développeur avec le flag :
+
+...
+// Did you know that comment are readable by the end user ?
+// Well, this because I build the application with the source maps enabled !!!
+// So please, disable source map when you build for production
+// Here is your flag : ...............
+...
+
+ou
+
+Pour commencer on télécharge les fichiers du bundle Webpack :
+
+    mkdir bundle && cd bundle
+    wget -r -nd --no-parent -R '*index.html*' http://challenge01.root-me.org/web-client/ch27/static/js/
+    # -r Mode récursif
+    # -nd Ne pas recréer l'arborescence
+    # --no-parent Ne télécharger que les documents "enfants"
+    # -R '*index.html*' Ne pas télécharger les documents "index.html"
+
+On peut maintenant trouver le flag en recherchant dans les fichiers téléchargés :
+
+    grep -sir flag
+    app.a92c5074dafac0cb6365.js.map:[...] // Here is your flag : Because[...]
+
+ou
+
+
+
+Bonjour,
+Pour commencer on regarde les sources, on remarques 3 fichiers JS. Vendor et manifest ne nous intéressent pas. le app par contre contient le code source de la page.
+On le passe dans un dé-minifier mais rien de très intéressant.
+A la fin du fichier par contre on a un commentaire :
+
+    //# sourceMappingURL=app.a92c5074dafac0cb6365.js.map
+
+les fichiers .map sont de type SourcesMaps, l’intérêt de ces fichiers est de faciliter le debug d’un javascript minifié.
+
+On va voir ce fichier, et on retrouve le flag dans un commentaire.

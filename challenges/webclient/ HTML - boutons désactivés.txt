@@ -1,0 +1,41 @@
+Une fois arrivé sur la page du challenge, on voit un input texte ainsi qu’un input bouton qui sont malheureusement grisés car il semblerait que le site soit en construction.
+En regardant dans le code source, on voit que c’est simplement un attribut donné aux inputs afin de le désactiver, cet attribut est "disabled".
+Étant donné qu’on peut facilement modifier l’HTML d’une page, il suffit d’aller dans inspecter l’élément (clic droit sur un des inputs, puis cliquer sur inspecter ou examiner), et d’effacer les "disabled".
+Une fois fait on peut rentrer un pseudo aléatoire et appuyer sur le bouton pour afficher notre flag.
+
+ou
+
+curl -X POST "http://challenge01.root-me.org/web-client/ch25/" -F "auth-login=ark" -F "authbutton='Member access'"
+
+ou
+
+On peut aussi procéder via wget  😄
+
+wget —post-data ’auth-login=commetuveux&authbutton=submit’ http://challenge01.root-me.org/web-client/ch25/ -O output.log
+
+ou
+
+Avec la barre "web developper" de firefox.
+
+Sélectionner "Formulaires" puis "Autoriser tous les champs de formulaire".
+
+Effectivement le formulaire se réactive.
+
+ou
+
+Si l’on ne veut pas éditer le code html, on peut envoyer directement la requete post en utilisant python :
+__import__('requests').post("http://challenge01.root-me.org/web-client/ch25/",data={"auth-login":"admin","authbutton":"Member access"}, headers={"s_fid":"254A3FC09A4644CA-38F8C901CACC65A8"}).text
+
+ou
+
+Avec javascript :
+
+document.getElementByName("authbutton")[0].disabled = false
+
+À entrer dans la console dans les outils développeur du navigateur de votre choix.
+
+ou
+
+il suffit d’exécuter le code js dans console :
+
+document.querySelectorAll("input[disabled]").forEach(function(elem){elem.disabled=false});

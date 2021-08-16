@@ -1,0 +1,250 @@
+Sans s’aider de décodeur automatique, on peut faire tout ça à la main :
+
+Grâce au PDF fourni, on peut passer du message de base à une chaîne d’entiers compris entre 0 et 63.
+
+B5F5R>2 !S:6UP ;&4@.RD*4$%34R`](%5,5%) !4TE-4$Q%"@``
+devient
+34 21 38 21 50 30 18 1 51 26 22 53 48 /27 6 20 32 14 50 36 10 20 4 5 19 20 50 0 61 8 5 21 12 21 5 9 1 20 52 37 13 20 4 49 5 2 32 0 0
+
+Puis, on apprend que le premier entier correspond au nombre de caractères encodés dans la chaîne de caractère initiale.
+On passe donc le reste des entiers sous forme binaire de 6 bits (une suite de 6x des 0 ou des 1) :
+
+34 010101 100110 010101 110010 011110 010010 000001 110011 011010 010110 110101 110000 011011 000110 010100 100000 001110 110010 100100 001010 010100 000100 000101 010011 010100 110010 000000 111101 001000 000101 010101 001100 010101 000101 001001 000001 010100 110100 100101 001101 010100 000100 110001 000101 000010 100000 000000 000000
+
+Puis on casse les blocs de 6 bits en blocs de 8 bits :
+34 01010110 01100101 01110010 01111001 00100000 01110011 01101001 01101101 01110000 01101100 01100101 00100000 00111011 00101001 00001010 01010000 01000001 01010011 01010011 00100000 00111101 00100000 01010101 01001100 01010100 01010010 01000001 01010011 01001001 01001101 01010000 01001100 01000101 00001010 00001010 00000000 00000000
+
+Puis on récupère les 34 premiers blocs de 8 bits :
+01010110 01100101 01110010 01111001 00100000 01110011 01101001 01101101 01110000 01101100 01100101 00100000 00111011 00101001 00001010 01010000 01000001 01010011 01010011 00100000 00111101 00100000 01010101 01001100 01010100 01010010 01000001 01010011 01001001 01001101 01010000 01001100 01000101 00001010
+
+Puis on peut passer ces blocs de binaire à ASCII :
+Very simple ;) (\n)PASS = ULTRASIMPLE(\n)
+
+ou
+
+(Réalisé sous GNU/Linux)
+Le titre du challenge permet de deviner que le fichier est codé en "UUencode".
+Copier/coller le contenu du challenge dans un fichier texte (code.txt, par exemple) et utiliser uudecode pour le déchiffrer.
+Voici la commande à utiliser :
+
+uudecode -o code_en_clair.txt code.txt
+
+La commande va créer un fichier "code_en_clair.txt". Il suffit ensuite de le lire pour voir apparaître le résultat du challenge :
+
+Very simple ;)
+PASS = ULTRASIMPLE
+
+Complément d’information :
+Si vous n’avez pas uuencode/uudecode d’installés, il faut installer le paquet sharutils.
+sudo apt-get install sharutils
+
+Flag : ULTRASIMPLE
+
+ou
+
+Il s’agit de décoder un fichier au format uuencoding.
+
+On prend la chaine de caractères contenant les données : B5F5R>2 !S:6UP ;&4@.RD*4$%34R`](%5,5%) !4TE-4$Q%"@``
+
+La documentation dit : "Each line of uuencoded data is prefixed, in the first column, with the encoded number of encoded octets on this line."
+
+On enlève donc le premier caractère ’B’. Il s’agit ensuite d’implémenter un décodeur, par exemple en s’inspirant du schéma de Wikipédia.
+
+On peut bien sur utiliser un décodeur en ligne ou uudecode, mais profitons en pour réviser nos bitshifts en C :
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#define DEC(c)    (((c) - ' ') & 077)
+
+char *sanitized_input(const char *input, int input_length) {
+    int i = 0;
+    int missing = input_length % 4;
+    int sanitized_length = input_length + (4 - missing);
+    char *result = malloc(sizeof(char) * sanitized_length + 1);
+
+    while (i < input_length) {
+        result[i] = input[i];
+        i++;
+    }
+    while (i < sanitized_length) {
+        result[i] = 32;
+        i++;
+    }
+    result[i] = 0;
+    return result;
+}
+
+void decode(char *good_str, int good_length) {
+    int i = 0;
+    char *chunk = malloc(5);
+
+    while (i < good_length) {
+        strncpy(chunk, &good_str[i], 4);
+        chunk[4] = 0;
+
+        int c1, c2, c3;
+
+        c1 = DEC(chunk[0]) << 2 | DEC(chunk[1]) >> 4;
+        c2 = DEC(chunk[1]) << 4 | DEC(chunk[2]) >> 2;
+        c3 = DEC(chunk[2]) << 6 | DEC(chunk[3]);
+
+        printf("%c%c%c", c1, c2, c3);
+
+        i += 4;
+    }
+    free(chunk);
+}
+
+int main() {
+    char str[] = "5F5R>2!S:6UP;&4@.RD*4$%34R`](%5,5%)!4TE-4$Q%\"@``";
+
+    int length = strlen(str);
+    int good_length = length + (4 - (length % 4));
+    char *good_str = sanitized_input(str, length);
+
+    decode(good_str, good_length);
+    free(good_str);
+    return 0;
+}
+
+ou
+
+La lecture de l’énoncé et une petite recherche google permet de déterminer le type d’encodage utilisé.
+A l’aide d’une console python, on peut trouver la réponse :
+
+    >>> import uu
+    >>> import sys
+    >>> from cStringIO import StringIO
+    >>> data = """
+    ... _=_
+    ... _=_ Part 001 of 001 of file root-me_challenge_uudeview
+    ... _=_
+    ...
+    ... begin 644 root-me_challenge_uudeview
+    ... B5F5R>2!S:6UP;&4@.RD*4$%34R`](%5,5%)!4TE-4$Q%"@``
+    ... `
+    ... end
+    ...
+    ... """
+    >>> f = StringIO(data) # traite le texte comme un fichier
+    >>> uu.decode(f, sys.stdout)
+    Very simple ;)
+    PASS = ULTRASIMPLE
+    >>>
+
+ou
+
+The basic way :)
+
+Un programme pascal ( 70 lignes avec 6 fonctions) chaque fonction représente une étape de l’algorithme ( decode UUENCODING)
+source de l’algorithme : Encodings format.pdf
+
+program uudec;
+var z,x,s,ss,r:string;
+
+Fonction Collection 4 char de string code
+
+function drop4(var a:string):string;
+    begin
+        drop4:=copy(a,1,4);
+
+    end;
+
+Fonction qui transfère chaque caractère a un nombre selon le tableau uuencoding
+
+function dec_tab(a:char):integer;
+        begin
+                dec_tab:=ord(a)-32;
+        end;
+
+Fonction convertir ce nombre en binaire (6bits)
+
+function bin(a:integer):string;
+        var x:integer;
+        begin
+                x:=a;
+                if x>1 then
+                while x<>0 do
+                begin
+                        bin:=chr((x mod 2) +48)+ bin;
+                        x:=x div 2;
+                end
+                else bin:=chr(x+48);
+                while length(bin)<6 do bin:='0'+bin;
+        end;
+
+Fonction divise le résultat binaire en 3 (24 / 3 = 8 bits pour chaque section )
+
+function uubin(s:string):string;
+var x:string;
+  i:integer;
+        begin
+                while length(s) <> 0 do
+                begin
+                         i:=1;
+                        x:=drop4(s);
+                while i<5 do
+                begin
+                        uubin:=uubin+bin(dec_tab(x[i]));
+
+                        i:=i+1;
+                end;
+                delete(s,1,4);
+                 end;
+                end;
+
+Fonction convertir les sections en décimale
+
+function bindec(s:string):integer;
+        var i,k:integer;
+        begin
+                bindec:=0;
+                k:=1;
+                while length(s)<>0 do
+                        begin
+                                bindec:=bindec + (ord(s[length(s)])-48)*k;
+                                delete(s,length(s),1);
+                                k:=k2;
+                        end;
+        end;
+
+Fonction UUDDECODING
+
+function uudecoding(s:string):string;
+ begin
+         x:=uubin(s);
+          while length(x) <> 0 do
+          begin
+          z:=copy(x,1,8);
+          uudecoding:=uudecoding+chr(bindec(z));
+          delete(x,1,8);
+          end;
+         end;
+
+Program :
+
+begin
+                 r:='5F5R>2!S:6UP;&4@.RD*4$%34R ](%5,5%)!4TE-4$Q%"@  ';
+                 writeln(uudecoding(r));
+                 readln;
+                end.
+
+Output :
+
+Very simple ;)
+PASS = ULTRASIMPLE
+
+
+ou
+
+
+Bonjour, et avis aux fainéants !
+
+Via des sites trouvable par le biais d’un moteur de recherche, on peut encoder/décoder automatiquement le uuencoding.
+
+Un exemple de site : http://www.dcode.fr/
+L’exemple nous intéressant en particulier : http://www.dcode.fr/encodage-uu
+
+Cordialement.

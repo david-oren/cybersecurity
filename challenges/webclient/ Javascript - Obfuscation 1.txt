@@ -1,0 +1,93 @@
+Regarder les sources
+
+pass = '%63%70%61%73%62%69%65%6e%64%75%72%70%61%73%73%77%6f%72%64';
+              [...]
+              if(h == unescape(pass)) {
+                  alert('Password accepté, vous pouvez valider le challenge avec ce mot de passe.\nYou an validate the challenge using this pass.');
+              }
+
+Il suffit alors d’ouvrir la console du naviguateur et d’y taper :
+
+alert(unescape('%63%70%61%73%62%69%65%6e%64%75%72%70%61%73%73%77%6f%72%64'))
+
+Une fenetre s’ouvre avec le mot de passe en clair : cpasbiendurpassword
+
+ou
+
+
+
+Dans l’outil développeur Chrome (F12), dans l’onglet source, on retrouve le code source de la page.
+
+Il suffit de sélectionner "unescape(pass)" et avec un clic droit choisir l’action "évaluer dans console"
+La console s’ouvre avec le mot de passe en clair.
+
+ou
+
+En fait c’est super simple.
+La manière la plus rapide c’est d’aller dans la console JavaScript (Ctrl+Shift+C) et de taper unescape(pass) ;
+En fait c’est la fonction qui est appelée dans le if quand on compare les mots de passe.
+Ce qui est logique pour rendre le pass utilisable est de faire la même chose mais sans le if.
+
+ou
+
+Moi j’ai tout simplement été sur un site de traduction HEX to ASCII et j’ai entré :
+
+%63%70%61%73%62%69%65%6e%64%75%72%70%61%73%73%77%6f%72%64
+
+Ce qui m’a donné :
+
+cpasbiendurpassword
+
+ou
+
+Dans le code source de la page, nous pouvons voir que le mot de passe est en hexadécimal.
+
+     pass = '%63%70%61%73%62%69%65%6e%64%75%72%70%61%73%73%77%6f%72%64';
+    </code>
+     
+    Avec un petit script réalisé en python 3, il est très facile de déchiffrer celui-ci.
+     
+    <code>
+    #!/usr/bin/python3
+     
+    import binascii
+     
+    #### Variables ####
+    encoded = "%63%70%61%73%62%69%65%6e%64%75%72%70%61%73%73%77%6f%72%64%"
+     
+    #### Processing ####
+    result = encoded.replace('%','')
+    result = binascii.a2b_hex(result).decode('ascii')
+    print(result)
+
+ou
+
+Regardez les sources
+
+On voit la ligne
+pass = '%63%70%61%73%62%69%65%6e%64%75%72%70%61%73%73%77%6f%72%64';
+
+Le pass est écrit en hexadecimal. Il suffit de le convertir à l’aide d’une table Hexa/Ascii<
+
+Par exemple dans un shell PHP interactif :
+
+    $ php -a
+    Interactive shell
+     
+    php > echo urldecode("%63%70%61%73%62%69%65%6e%64%75%72%70%61%73%73%77%6f%72%64"), "\n";
+    cpasbiendurpassword
+    php >
+
+ou
+
+En affichant la source on devine vite que l’on est face à un code Hexadécimal.
+Il suffit donc de récupérer la chaîne à décrypter et d’enlever les "%"
+
+Faire un copier coller et de se servir des outils en ligne du site "coder - décoder"
+Sélectionner Hex 2 Text
+
+ou
+
+Afin de désobfusquer le code mettez votre chaine %63%70%61%73%62%69%65%6e%64%75%72%70%61%73%73%77%6f%72%64 dans http://jsbeautifier.org/
+et le site décodera l’hexadécimal.
+

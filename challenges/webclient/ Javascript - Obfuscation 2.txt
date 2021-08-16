@@ -1,0 +1,144 @@
+Le code de base :
+
+    var pass = unescape("unescape%28%22String.fromCharCode%2528104%252C68%252C117%252C102%252C106%252C100%252C107%252C105%252C49%252C53%252C54%2529%22%29");
+
+La solution :
+
+    alert( eval( eval( pass ) ) );
+
+Il suffit de coller ce code dans la console, et le mot de passe apparaitra dans une popup.
+
+La fonction
+eval
+va exécuter le code qu’on lui donne sous forme de chaine de caractères. On dit qu’elle va l’évaluer
+
+Ressources complémentaires :
+
+    La page MDN sur la fonction eval : https://developer.mozilla.org/fr/docs/Web/JavaScript/Reference/Objets_globaux/eval
+
+ou
+
+
+
+    var pass = unescape("unescape%28%22String.fromCharCode%2528104%252C68%252C117%252C102%252C106%252C100%252C107%252C105%252C49%252C53%252C54%2529%22%29");
+    var a = String.fromCharCode(104,68,117,102,106,100,107,105,49,53,54);
+    document.write("le password est ",a);
+
+Télécharger
+
+il faut dabord unescape la variable "pass", ce qui nous donne :
+
+    String.fromCharCode(104,68,117,102,106,100,107,105,49,53,54);
+
+puis il faut retranscrire la variable a en string depuis char nous donnant finalement le mot de passe de validation :
+
+ hDufjdki156
+
+ ou
+
+ En ouvrant la page du challenge on obtient une page blanche, donc un Ctrl + u pour afficher le code source.
+
+On découvre alors que le mot de passe est présent dans ce script :
+
+    <script type="text/javascript">
+            var pass = unescape("unescape%28%22String.fromCharCode%2528104%252C68%252C117%252C102%252C106%252C100%252C107%252C105%252C49%252C53%252C54%2529%22%29");
+    </script>
+
+Télécharger
+
+Le mot de passe à été rendu incompréhensible avec la fonction escape() du javascript qui permet de protéger les chaînes de caractères en encodant les caractères spéciaux. La fonction unescape() ici permet de revenir en arrière.
+
+On descend d’un étage avec unescape() :
+var pass = unescape("unescape("String.fromCharCode%28104%2C68%2C117%2C102%2C106%2C100%2C107%2C105%2C49%2C53%2C54%29")");
+
+Il reste encore du texte a décoder, on descend d’un deuxième étage à nouveau avec unescape() :
+var pass = unescape("unescape("String.fromCharCode(104,68,117,102,106,100,107,105,49,53,54)")");
+
+Nous voilà maintenant avec une série de chiffre :
+104,68,117,102,106,100,107,105,49,53,54
+
+Avec un peu de recherche, on découvre qu’il s’agit de la valeur décimale du tableau ascii des caractères qui composent le mot de passe.
+
+Enfin le troisième étage, une petite substitution rapide "décimale vers char" nous donne :
+var pass = unescape("unescape("String.fromCharCode(h,D,u,f,j,d,k,i,1,5,6)")");
+
+Et voilà challenge validé
+
+Documentation utile : http://www.asciitable.com/index/asciifull.gif
+
+https://developer.mozilla.org/fr/docs/JavaScript_Guide/Fonctions_pr%C3%A9d%C3%A9finies/Les_fonctions_escape_et_unescape
+
+Outil : http://www.tareeinternet.com/scripts/unescape.html
+
+
+ou
+
+Utilisation de la méthode unescape() pour décoder la chaîne de caractère hexadécimale :
+('%2528104%252C68%252C117%252C102%252C106%252C100%252C107%252C105%252C49%252C53%252C54%2529%22%29')
+
+Résultat :
+%28104%2C68%2C117%2C102%2C106%2C100%2C107%2C105%2C49%2C53%2C54%29
+
+2/ Décoder une nouvelle fois le résultat précédent écrit en hexadécimale :
+unescape('%28104%2C68%2C117%2C102%2C106%2C100%2C107%2C105%2C49%2C53%2C54%29')
+
+Résultat :
+"(104,68,117,102,106,100,107,105,49,53,54)"
+
+3/ Maintenant, il faut décoder la chaîne de caractère écrite à partir de points de code UTF-16, ceci est possible grâce à la méthode statique String.fromCharCode() :
+console.log(String.fromCharCode(104,68,117,102,106,100,107,105,49,53,54));
+
+résultat = hDufjdki156
+
+Et nous avons le mot de passe 😉
+
+Sources :
+https://developer.mozilla.org/fr/docs/Web/JavaScript/Reference/Objets_globaux/unescape
+https://developer.mozilla.org/fr/docs/Web/JavaScript/Reference/Objets_globaux/String/fromCharCode
+
+
+ou
+
+Habitué à l’analyse de virus, j’utilise le programme Linux rhino pour exécuter les JS (ce qui permet de se déconnecter d’Internet).
+Soit toto.js, le morceau de JS à désofusquer.
+
+Première phase
+
+var pass = unescape("unescape%28%22String.fromCharCode%2528104%252C68%252C117%252C102%252C106%252C100%252C107%252C105%252C49%252C53%252C54%2529%22%29");
+print (pass);
+
+rhino toto.js 
+unescape("String.fromCharCode%28104%2C68%2C117%2C102%2C106%2C100%2C107%2C105%2C49%2C53%2C54%29")
+
+On voit que la désobfuscation n’est pas terminée
+
+Seconde phase
+
+var pass = unescape("unescape%28%22String.fromCharCode%2528104%252C68%252C117%252C102%252C106%252C100%252C107%252C105%252C49%252C53%252C54%2529%22%29");
+print (eval(pass));
+
+rhino toto.js 
+String.fromCharCode(104,68,117,102,106,100,107,105,49,53,54)
+
+Toujours pas fini
+
+Troisième phase
+
+var pass = unescape("unescape%28%22String.fromCharCode%2528104%252C68%252C117%252C102%252C106%252C100%252C107%252C105%252C49%252C53%252C54%2529%22%29");
+print (eval(eval(pass)));
+
+rhino toto.js 
+hDufjdki156
+
+ou
+
+1) CTRL - U pour voir le code source
+
+2) Copier la clé chiffré : %2528104%252C68%252C117%252C102%252C106%252C100%252C107%252C105%252C49%252C53%252C54%2529%22%29
+
+3) Coller la clé ici pour déchiffrer http://www.utilities-online.info/ur... cliquez sur decode —> puis sur <--- decode
+Vous obtiendrez ceci : (104,68,117,102,106,100,107,105,49,53,54)") il ne reste plus qu’a convertir le code
+104,68,117,102,106,100,107,105,49,53,54 ici : https://www.dcode.fr/code-ascii voilà
+
+
+

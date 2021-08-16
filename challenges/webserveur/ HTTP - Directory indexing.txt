@@ -1,0 +1,112 @@
+Pour ma part j’ai utilisé l’outil nikto pour scanner la cible :
+
+nikto -h http://challenge01.root-me.org/web-serveur/ch4/
+
+Après quelques instants, il détecte un répertoire intéressant :
+
++ OSVDB-3092: /web-serveur/ch4/admin/: This might be interesting...
+
+Il suffit de s’y rendre pour voir que certains fichiers / dossiers sont disponibles et de trouver le mot de passe dans le sous dossier "backup"
+
+ou
+
+En examinant la source de la page, on voit ’include("admin/pass.html")’ mise en commentaire. En complétant l’url de la page avec ce chemin (soit http://challenge01.root-me.org/web-serveur/ch4/admin/pass.html), on tombe sur une page piège qui nous indique :
+"J’ai bien l’impression que tu t’es fait avoir / Got rick rolled ? ;)
+T’inquiète tu n’es pas le dernier / You’re not the last :p
+
+Cherche BIEN / Just search"
+
+Mais en remontant dans le répertoire admin/ on s’aperçoit qu’il contient deux éléments : un répertoire backup/ et le fichier pass.html.
+En examinant le répertoire backup/ on trouve le fichier "admin.txt" qui contient le fameux mot de passe.
+
+ou
+
+Pour résoudre ce challenge on commence par utiliser l’utilitaire curl :
+curl --url http://challenge01.root-me.org/web-serveur/ch4/
+
+on obtient le résultat suivant :
+
+<html>
+<body><link rel='stylesheet' property='stylesheet' id='s' type='text/css' href='/template/s.css' media='all' /><iframe id='iframe' src='https://www.root-me.org/?page=externe_header'></iframe>
+<!-- include("admin/pass.html") -->
+
+</body>
+</html>
+
+Le résultat nous donne l’indice "admin/pass.html", on teste de nouveau avec curl :
+curl --url http://challenge01.root-me.org/web-serveur/ch4/admin/pass.html
+
+On obtient :
+
+     J'ai bien l'impression que tu t'es fait avoir / Got rick rolled ? ;)
+      T'inqui&egrave;te tu n'es pas le dernier / You're not the last  :p
+      Cherche BIEN / Just search
+
+Il semblerait que ce soit un cul de sac mais on se doute que d’autres fichiers doivent être dispo.
+On degaine dirb :
+dirb http://challenge01.root-me.org/web-serveur/ch4/
+
+Au bout d’un moment le résultat tombe :
+
+---- Scanning URL: http://challenge01.root-me.org/web-serveur/ch4/ ----
+==> DIRECTORY: http://challenge01.root-me.org/web-serveur/ch4/admin/                                                        
++ http://challenge01.root-me.org/web-serveur/ch4/index.html (CODE:200|SIZE:252)                                             
+                                                                                                                            
+---- Entering directory: http://challenge01.root-me.org/web-serveur/ch4/admin/ ----
+==> DIRECTORY: http://challenge01.root-me.org/web-serveur/ch4/admin/backup/                                                 
+
+On teste le chemin http://challenge01.root-me.org/web-serveur/ch4/admin/backup/ et là on découvre le sésame et voilà !
+
+ou
+
+Il suffit de lancer la commande suivante sur linux :
+
+root@kali:~# wget --spider -r --no-parent http://challenge01.root-me.org/web-serveur/ch4/admin
+
+Elle listera tous les fichier/directories sur l’url en question :
+
+Spider mode enabled. Check if remote file exists.
+--2017-06-13 02:52:02--  http://challenge01.root-me.org/web-serveur/ch4/admin/backup/admin.txt
+Reusing existing connection to challenge01.root-me.org:80.
+HTTP request sent, awaiting response... 200 OK
+Length: 32 [text/plain]
+Remote file exists but does not contain any link -- not retrieving.
+
+Parmi les résultats trouvés on voit bien le fichier admin.txt qui contient effectivement le mot de passe :
+
+root@kali:~# wget http://challenge01.root-me.org/web-serveur/ch4/admin/backup/admin.txt
+--2017-06-13 02:56:38--  http://challenge01.root-me.org/web-serveur/ch4/admin/backup/admin.txt
+Resolving challenge01.root-me.org (challenge01.root-me.org)... 212.129.38.224, 2001:bc8:35b0:c166::151
+Connecting to challenge01.root-me.org (challenge01.root-me.org)|212.129.38.224|:80... connected.
+HTTP request sent, awaiting response... 200 OK
+Length: 32 [text/plain]
+Saving to: ‘admin.txt’
+
+admin.txt                                        100%[=======================================================================================================>]      32  --.-KB/s    in 0s
+
+2017-06-13 02:56:38 (1.85 MB/s) - ‘admin.txt’ saved [32/32]
+
+Puis on affiche le résultat :
+
+root@kali:~# cat admin.txt
+Password / Mot de passe : L****
+
+ou
+
+La page du challenge s’appelle ch4.html, et non index.*
+
+En l’occurence, la page index n’existe pas, ce qui nous donne accès à l’arborescence du site, en se placant dans le répertoire ch4.
+
+A partir de là, c’est trivial, on navigue jusqu’au fichier admin.txt qui contient le pass.
+
+ou
+
+
+
+D’après le titre du challenge, on se doute que l’indexation doit être autorisé dans un certain répertoire. Une fois dans le répertoire du challenge, on teste divers noms de sous répertoires : on se rend alors compte que le sous répertoire
+admin
+existe. En progressant dans l’arborescence, on tombe finalement sur un fichier texte contenant le mot de passe.
+Répertoire
+admin/backup/admin.txt
+
+Le mot de passe écrit dans le fichier est L****.

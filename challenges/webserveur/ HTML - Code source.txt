@@ -1,0 +1,43 @@
+Effectuez un CTRL + U ou clique droit > afficher le code source et rechercher le commentaire HTML dans le code source.
+
+Scrollez latéralement sur la droite et vous devrez voir apparaitre cela :
+
+<!--
+Je crois que c'est vraiment trop simple là !
+It's really too easy !
+password : nZ^&@q5&sjJHev0
+-->
+
+ou
+
+Ouvrir l’inspecteur d’éléments (F12) ou inspecter directement le bouton"login" permet de voir le mot de passe, qui est commenté juste en dessous.
+
+ou
+
+HTML, est le format de données conçu pour représenter les pages web. Le code HTML du challenge contient le commentaire suivant
+
+<!--
+Bienvennue sur ce portail,
+
+On y retrouve le texte "légèrement caché" suivant
+
+Je crois que c'est vraiment trop simple là !
+       password : nZ^*****JHev0
+
+ou
+
+Il suffit d’exécuter la commande suivante :
+
+root@blackbox:/tmp# curl http://challenge01.root-me.org/web-serveur/ch1/ | grep "password :"
+
+Resultat :
+
+password : n******************0
+
+ou
+
+Appuyer sur ctrl + shift + c
+mettre votre curseur sur " Mot de passe incorrect / Incorrect password "
+ce qui vous redirigera sur " Mot de passe incorrect / Incorrect password " du code source
+et vous trouverez juste en dessous le mot de passe .
+

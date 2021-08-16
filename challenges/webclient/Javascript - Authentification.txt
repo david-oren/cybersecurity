@@ -1,0 +1,122 @@
+Il y a une solution assez simple de trouvez ce que l’on cherche :
+
+    On fait un Clique droit : « Examiner l’élément »
+    Puis on regarde dans l’onglet « Débogueur »
+    On déroulle le dossier sources : en l’occurence « web-client/ch9 »
+    On voit un magnifique fichier .js nommé « login.js »
+    On le regarde pour voir ce qu’il contient :
+
+    /* <![CDATA[ */
+
+    function Login(){
+            var pseudo=document.login.pseudo.value;
+            var username=pseudo.toLowerCase();
+            var password=document.login.password.value;
+            password=password.toLowerCase();
+            if (pseudo=="4dm1n" && password=="sh.org") {
+                alert("Password accepté, vous pouvez valider le challenge avec ce mot de passe.\nYou an validate the challenge using this password.");
+            } else { 
+                alert("Mauvais mot de passe / wrong password"); 
+            }
+    }
+    /* ]]> */ 
+
+Mais la ligne qui nous intéresse est la suivante  🙂 :
+if (pseudo=="4dm1n" && password=="sh.org")
+
+Car elle nous donne le « pseudo » et le « password » qu’il faut utiliser !! :’-))
+
+
+ou
+
+Explication détaillée :
+1 – identifier comment est gérer l’authentification
+
+(on le sait déjà, c’est le but du chalenge ☺ ).
+Dans le cas contraire, en regardant le code source de la page, on remarque la ligne
+<input onclick="Login()" type="button" value="login" name="button" />
+
+C’est donc une validation avec un appel à la fonction login() lors du click sur le bouton login.
+Étrange ! A première vu, il ni as pas de fonction login().
+
+Où est elle ?
+Nous avons plusieurs indices :
+-  le corps de la page indique une section Head qui semble inutile !?
+-  la barre de défilement s’affiche pour la largeur sans raison apparente !?
+Intéressant, on fait défilé la page vers la droite et on trouve la ligne :
+<script type="text/javascript" src="login.js"></script>
+
+Nous avons la fonction login.js donc un control d’identification avec Javascript.
+2. Affichage du code
+
+Pour ce faire, rien de plus simple, cliquer sur login.js ou en l’ajoutant manuellement à l’url de la page. ceci nous affiche la page : http://challenge01.root-me.org/web-client/ch9/login.js
+cette page comprend la fonction login() :
+
+function Login(){
+        var pseudo=document.login.pseudo.value;
+        var username=pseudo.toLowerCase();
+        var password=document.login.password.value;
+        password=password.toLowerCase();
+        if (pseudo=="4dm1n" && password=="sh.org") {
+            alert("Password acceptÃ©, vous pouvez valider le challenge avec ce mot de passe.\nYou an validate the challenge using this password.");
+        } else { 
+            alert("Mauvais mot de passe / wrong password"); 
+        }
+}
+
+3. Lecture de la fonction login.js et SOLUTION
+
+on remarque rapidement la ligne et la solution de notre chalenge :
+if (pseudo=="4dm1n" && password=="sh.org")
+Conclusion / a retenir :
+
+cacher une information est un vieux principe. c’est un peu comme de l’encre invisible. retenons qu’il faux éviter les lectures trop rapide et creuser les anomalies/bizarreries.
+plus rapide :
+
+Essayez le débogueur de votre navigateur : F12 ( Firefox et iexplorer )
+, Ctrl+Shift+J ( chrome).
+
+
+ou
+
+
+Avec Firefox (19.0 personnellement) et son outil intégré pour le développement web.
+Il faut ouvrir la page, lancer la console web et réactualiser la page.
+On voit que la page appelle un fichier Javascript http://challenge01.root-me.org//web-client/ch9/login.js. On n’a plus qu’a visiter l’url de ce fichier pour en afficher le contenu.
+Ce fichier nous dit :
+«if (pseudo=="4dm1n" && password=="sh.org")»
+
+On en déduit dont que le mot de passe est : sh.org
+
+ou
+
+Pour cette épreuve il faut regarder le code source de la page HTML du challenge. On identifie un script externe chargé via la balise HTML "script" et l’attribut "src"
+
+<script src="[URI du script]">
+
+En consultant le code source du script on retrouve le mot de passe en clair.
+
+ou
+
+Un simple coup d’oeil aux sources nous donne la solution :
+
+/* <![CDATA[ */
+
+function Login(){
+        var pseudo=document.login.pseudo.value;
+        var username=pseudo.toLowerCase();
+        var password=document.login.password.value;
+        password=password.toLowerCase();
+        if (pseudo=="4dm1n" && password=="sh.org") {
+            alert("Password accepté, vous pouvez valider le challenge avec ce mot de passe.\nYou an validate the challenge using this password.");
+        } else { 
+            alert("Mauvais mot de passe / wrong password"); 
+        }
+}
+/* ]]> */
+
+Le mot de passe est donc : sh.org
+
+Il suffit donc d’utiliser le même mot de passe pour valider.
+
+Mawu3n4

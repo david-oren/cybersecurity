@@ -1,0 +1,121 @@
+
+
+Tout d’abord il faut analyser le code source pour voir les fonctions JS disponible :
+On observe un appel à la fonction dechiffre() avec en paramètre une chaine en ASCII et le tout est passé en paramètre à la fonction fromCharCode() :
+
+    String["fromCharCode"](dechiffre("\x35\x35\x2c\x35\x36\x2c\x35\x34\x2c\x37\x39\x2c\x31\x31\x35\x2c\x36\x39\x2c\x31\x31\x34\x2c\x31\x31\x36\x2c\x31\x30\x37\x2c\x34\x39\x2c\x35\x30"));
+
+Lorsqu’on décode pas à pas la chaine ASCII cela donne :
+
+\x35 = 5 en decimal
+Donc \x35\x35\x2c = "55," et String.fromCharCode(55) ; = 7
+
+En continuant sur cette logique on obtient la chaine suivante :
+
+"55,56,54,79,115,69,114,116,107,49,50"
+
+En calculant :
+
+    String.fromCharCode(55,56,54,79,115,69,114,116,107,49,50);
+
+On obtient "786OsErtk12" qui est le password du challenge.
+
+ou
+
+Hello,
+pour réussir ce challenge, nous pouvons utiliser seulement deux fonctions de javascript.
+Tout d’abord, en cherchant un peu en bas du fichier, on trouve cette longue suit de caractère :
+\x35\x35\x2c\x35\x36\x2c\x35\x34\x2c\x37\x39\x2c\x31\x31\x35\x2c\x36\x39\x2c\x31\x31\x34\x2c\x31\x31\x36\x2c\x31\x30\x37\x2c\x34\x39\x2c\x35\x30
+
+Ouvrez la console et tapez : alert(’\x35\x35\x2c\x35\x36\x2c\x35\x34\x2c\x37\x39\x2c\x31\x31\x35\x2c\x36\x39\x2c\x31\x31\x34\x2c\x31\x31\x36\x2c\x31\x30\x37\x2c\x34\x39\x2c\x35\x30’)
+Une pop-up apparait avec en cadeau une suite nombre : 55,56,54,79,115,69,114,116,107,49,50.
+Toujours dans la console tapez maintenant : alert(String.fromCharCode(55,56,54,79,115,69,114,116,107,49,50))
+Une nouvelle pop-up apparaît avec cette fois le mot de passe pour valider ce défi  🙂
+
+
+ou
+
+Ma solution repose sur les outils disponible en ligne.
+N’ayant pas trop de connaissances en programmation j’ai pu déduire le mot de passe en analysant le comportement du script
+
+D’abord j’ai testé le script en tapant n’importe quoi et je tombe sur le message : "FAUX PASSWORD HAHA"
+
+ensuite j’ai décodé le contenu de la variable pass avec un tool disponible sur internet :
+var pass = "70,65,85,88,32,80,65,83,83,87,79,82,68,32,72,65,72,65";
+
+// pass = F,A,U,X, ,P,A,S,S,W,O,R,D, ,H,A,H,A on https://www.branah.com/ascii-converter
+
+La solution n’est pas là. J’ai alors cherché une autre partie du script encodé :
+
+    String["fromCharCode"](dechiffre("\x35\x35\x2c\x35\x36\x2c\x35\x34\x2c\x37\x39\x2c\x31\x31\x35\x2c\x36\x39\x2c\x31\x31\x34\x2c\x31\x31\x36\x2c\x31\x30\x37\x2c\x34\x39\x2c\x35\x30"));
+
+Je l’ai décodé deux fois :
+
+// 55,56,54,79,115,69,114,116,107,49,50 on http://ddecode.com/hexdecoder/
+// 7,8,6,O,s,E,r,t,k,1,2 on https://www.branah.com/ascii-converter
+
+Je trouve donc 7,8,6,O,s,E,r,t,k,1,2, il ne reste plus qu’à retirer les virgules (cf fonction split)
+
+
+ou
+
+Afin d’obtenir le mot de passe, il suffit de modifier la fonction "dechiffre" afin d’effectuer un console.log de pass_enc (le paramètre de la fonction).
+Ainsi lors de l’execution de ce bout de code :
+
+    function dechiffre(pass_enc){
+        console.log(pass_enc);
+        var pass = "70,65,85,88,32,80,65,83,83,87,79,82,68,32,72,65,72,65";
+        var tab  = pass_enc.split(',');
+                var tab2 = pass.split(',');var i,j,k,l=0,m,n,o,p = "";i = 0;j = tab.length;
+                        k = j + (l) + (n=0);
+                        n = tab2.length;
+                        for(i = (o=0); i < (k = j = n); i++ ){o = tab[i-l];p += String.fromCharCode((o = tab2[i]));
+                                if(i == 5)break;}
+                        for(i = (o=0); i < (k = j = n); i++ ){
+                        o = tab[i-l]; 
+                                if(i > 5 && i < k-1)
+                                        p += String.fromCharCode((o = tab2[i]));
+                        }
+        p += String.fromCharCode(tab2[17]);
+        pass = p;return pass;
+    }
+    String["fromCharCode"](dechiffre("\x35\x35\x2c\x35\x36\x2c\x35\x34\x2c\x37\x39\x2c\x31\x31\x35\x2c\x36\x39\x2c\x31\x31\x34\x2c\x31\x31\x36\x2c\x31\x30\x37\x2c\x34\x39\x2c\x35\x30"));
+    
+    h = window.prompt('Entrez le mot de passe / Enter password');
+    alert( dechiffre(h) );
+
+On obtient ainsi "55,56,54,79,115,69,114,116,107,49,50" dans la console. Pour obtenir le mot de passe en clair, il suffit d’exécuter ce bout de code :
+console.log(String.fromCharCode(55,56,54,79,115,69,114,116,107,49,50));
+
+Le mot de passe se révèle : 786OsErtk12
+
+ou
+
+Lors de l’analyse du code source de la page, on constate que la méthode est appelée avant le prompt :
+String["fromCharCode"](dechiffre("\x35\x35\x2c\x35\x36\x2c\x35\x34\x2c\x37\x39\x2c\x31\x31\x35\x2c\x36\x39\x2c\x31\x31\x34\x2c\x31\x31\x36\x2c\x31\x30\x37\x2c\x34\x39\x2c\x35\x30"));
+
+En mettant un point d’arrêt en débug via Chrome Developer Tools ou équivalent, on récupère la chaîne dans la variable pass_enc :
+pass_enc = "55,56,54,79,115,69,114,116,107,49,50"
+
+Il s’agit d’une chaîne en unicode. En appelant, via la console, la méthode String.fromCharCode, on récupère le mot de passe :
+String.fromCharCode(55,56,54,79,115,69,114,116,107,49,50)
+
+"786OsErtk12"
+
+ou
+
+Tout simplement :
+
+String.fromCharCode.apply(String, "\x35\x35\x2c\x35\x36\x2c\x35\x34\x2c\x37\x39\x2c\x31\x31\x35\x2c\x36\x39\x2c\x31\x31\x34\x2c\x31\x31\x36\x2c\x31\x30\x37\x2c\x34\x39\x2c\x35\x30".split(","));
+
+Explication :
+
+"\x35\x35\x2c\x35\x36\x2c\x35\x34\x2c\x37\x39.....".split(",")
+
+Ici, la chaîne de caractère déclarée en hexa sera automatiquement évaluée en ascii. A cela on applique la méthode String.split(",") qui retourne un Array[]
+
+String.fromCharCode.apply
+
+est tout simplement l’appel de la méthode String.fromCharCode avec passage des arguments dans un tableau
+(cf : https://developer.mozilla.org/fr/docs/Web/JavaScript/Reference/Objets_globaux/Function/apply )
+

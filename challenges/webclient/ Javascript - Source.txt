@@ -1,0 +1,16 @@
+
+
+Pour cette épreuve il faut regarder le code source HTML de la page. On identifie un script javascript entre les balises HTML script :
+
+<script>
+[CODE Javascript]
+</script>
+
+Le mot de passe y est affiché en clair.
+
+ou
+
+Pour valider ce challenge,Apres chargement de la page :
+Saisissez n’importe quel valeur(OK ou Annuler ou ...) dans le pop up() ,le pop up est bloquant le but ici est de permettre le chargement complet de la page pour pouvoir accéder au code source
+A partir des outils de développement accéder au code source de la page et récupérer le mot de passe présent dans le code javascript  😎  😉
+

@@ -1,0 +1,19 @@
+Comme pour le challenge "Authentification", un simple coup d’oeil aux sources nous donne la solution :
+
+[...]
+  TheLists[0] = "CACHÉ:HIDDEN";
+[...]
+   var TheSplit = TheLists[i].split(":");
+   var TheUsername = TheSplit[0];
+   var ThePassword = TheSplit[1];
+[...]
+
+Il suffit donc de se connecter avec comme userame : CACHÉ et pass : HIDDEN
+
+Mawu3n4.
+
+ou
+
+Tout d’abord allons sur la page, on voit que la demande de mot de passe se fait avec un script de type javascript.
+dirigeons nous sur le code source de la page pour y trouver un fichier de type ".js" ,dans les variables definies a l’interieur du fichier, nous avons "thelist" qui est une liste dont le ppremier element est l’username et le deuxieme le mot de passe
+

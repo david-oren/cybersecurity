@@ -1,0 +1,104 @@
+Avec l’outil nikto (disponible dans Kali Linux) :
+
+$ nikto -h http://challenge01.root-me.org/web-serveur/ch3/                                                                [21:49 16-05-25]
+- Nikto v2.1.5
+---------------------------------------------------------------------------
++ Target IP:          212.129.38.224
++ Target Hostname:    challenge01.root-me.org
++ Target Port:        80
++ Start Time:         2016-05-25 21:50:07 (GMT2)
+---------------------------------------------------------------------------
++ Server: nginx
++ The anti-clickjacking X-Frame-Options header is not present.
++ No CGI Directories found (use '-C all' to force check all possible dirs)
++ Default account found for 'Restricted access' at /web-serveur/ch3/ (ID 'admin', PW 'admin'). Generic account discovered..
+
+ou
+
+J’ai repris la proposition faites par @huissardux car je voulais apprendre à me servir de Burp.
+La partie brute force a été pas mal différente de ce qui avait été expliqué donc voilà comment moi j’ai fait :
+
+1- Onglet Proxy > "Intercept is On" => On lance une tentative d’identification (exemple login : aa / password : aa)
+
+2 - On obtient une requête du genre :
+
+GET /web-serveur/ch3/ HTTP/1.1
+Host: challenge01.root-me.org
+Authorization: Basic YWE6YWE=
+Upgrade-Insecure-Requests: 1
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/77.0.3865.120 Safari/537.36
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3
+Accept-Encoding: gzip, deflate
+Accept-Language: fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7,es;q=0.6
+Connection: close
+
+3- Click droit > send to intruder
+
+4- Onglet Intruder > Positions : click sur "clear§" => Cela retire tous les "§" sur la requête (tout ce qui aurait pu être variabilisé automatiquement)
+
+5- Le payload est encodé en 64 derrière "Basic" et est passé au GET comme ceci "nom_utilisateur:password" :
+Authorization: Basic YWE6YWE=
+(ici YWE6YWE= se decode64 en "aa:aa")
+Donc on sélectionne tout ce qui a derrière Basic et on click "Add§" pour variabiliser un endroit dans la requête :
+Authorization: Basic §YWE6YWE=§
+
+On peut donner un nom si ça fait plaisir, genre :
+Authorization: Basic §combo_usr_pwd§
+Mais attention de ne garder qu’un seul payload !
+
+6- On met l’Attack type sur "Sniper"
+
+7- Onglet Intruder > Payloads
+Dans "Payload Set" on met le payload type à "custom iterator"
+Dans "Payload Options" on créé une 1ere liste pour le username (position 1) ; On ajoute " :" comme separator for position 1 ; on créé une 2eme liste pour le password (position 2)
+Dans le "Payload processing" on ajoute un "encode" en "base 64"
+On fait gaffe de décocher URL encode (ce n’est pas une URL mais un service GET donc on veut garder les "=" et pas avoir des "%3d" par exemple)
+
+8- Start Attack
+
+Dans la fenêtre qui s’ouvre on voit qu’une seule requête est passé : la seule en status 200
+On decode64 le payload
+YWRtaW46YWRtaW4=
+ce qui donne
+admin:admin
+
+On vérifie sur la page de login et effectivement le couple admin / admin fonctionne !
+
+Source : https://securityonline.info/use-burp-suite-brute-force-http-basic-authentication/
+
+ou
+
+Alors pour ma part au vu du titre du sujet : "Mot de passe faible", je me suis de suite douté que le mot de passe serait forcément un de ceux par défaut :
+
+admin, Admin, password, Password, 1234, root, ....
+
+Je pense que plutôt de les tester un à un et de les combiner, il serait judicieux de tenter avec Burp. Je règle le proxy Firefox et je lance "Intercept is on" sur Burp qui va capturer la page de l’épreuve. J’entre des identifiants au hasard et récupère le résultat.
+
+La requête capturée peut être visualisée dans l’onglet ’"Intercept". Je clique avec le bouton droit de la souris et je choisis "Send to Intruder".
+
+Ensuite, j’accède à l’onglet « Positions » et j’efface les payloads prédéfinies en utilisant le bouton ’"Clear" à droite de l’éditeur de requêtes. J’ajoute les valeurs des paramètres ’nom d’utilisateur’ et ’mot de passe’ en tant que positions en les mettant en surbrillance et en utilisant le bouton "Add".
+
+Je change pour l’attaque "Cluster bomb" en utilisant le menu déroulant "Attack type". Accédez à l’onglet ’Charges utiles’.
+
+Dans les réglages "Payload sets", il faut que "Payload set" soit sur ’1’ et ’Payload type’ défini sur ’Simple list’.
+
+Dans les paramètres "Payload options", je met ma liste de mots de passe par défaut.
+
+Ensuite, on fait de même dans les options "Payload Sets", en modifiant ’Payload’ sur ’2’.
+
+En effet il faut deux valeurs de champs pour la requête user et mot de passe.
+
+Je met la même liste et cette fois je lance le brute force en cliquant sur le bouton "start attack".
+
+Dans la fenêtre ’Intruder attack’, Je regarde et je trie les résultats 302 , 200 , ... Je remarque qu’une seule attaque a aboutis désignant comme identifiants : admin et admin.
+
+Je n’ai plus qu’à tester en direct et effectivement il me confirme que l’épreuve est réussie.
+
+
+ou
+
+En testant successivement des couples d’identifiants triviaux, on trouve rapidement le couple suivant :
+
+- nom d’utilisateur : admin
+- mot de passe : admin
+

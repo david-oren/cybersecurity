@@ -1,0 +1,12 @@
+Pour ceux qui veulent trouver assez rapidement sans trop chercher, il est possible d’utiliser FofoForensics (Lien : https://fotoforensics.com/ ) qui permettra de détecter les modifications appliquées sur une image. On obtient ceci alors l’image ci joint.
+
+On détecte alors facilement où la modification est appliquée, plus qu’à zoomer sur l’image originale !
+
+ou
+
+Résolution
+Sur le bord supérieur de l’image au centre droit est écrit de manière assez lisible (en agrandissant au besoin) :
+PASS=TOTORO
+
+Flag :
+TOTORO

@@ -1,0 +1,136 @@
+Une fois remarqué que cette chaine est en hexadécimal, il est assez facile de la décoder en Python :
+
+    str = "4C6520666C6167206465206365206368616C6C656E6765206573743A203261633337363438316165353436636436383964356239313237356433323465"
+     
+    str.decode("hex")
+
+ou
+
+Dans le terminal tout simplement :
+echo "4C6520666C6167206465206365206368616C6C656E6765206573743A203261633337363438316165353436636436383964356239313237356433323465" | xxd -r -p
+
+ou
+
+Il s’agit d’un simple encodage ASCII des caractères.
+
+En plaçant dans le fichier ’challenge’ le texte encodé, il suffit de lancer la commande suivante :
+
+echo -e "$(sed -e 's/../\\x&/g' challenge)"
+
+On obtient alors le résultat suivant :
+
+Le flag de ce challenge est: 2ac376481ae546cd689d5b91275d324e
+
+ou
+
+#Avec Python 3.4.3 :
+
+import codecs
+sstr = "4C6520666C6167206465206365206368616C6C656E6765206573743A203261633337363438316165353436636436383964356239313237356433323465"
+codecs.decode(sstr, "hex")
+
+ou
+
+Il s’agit de la représentation hexadécimal ascii d’une chaîne de caractères. On peut soit la décrypter à la main à l’aide de la rfc20 qui donne les correspondances, soit créer un programme qui le fait, soit utiliser ce qui existe déjà.
+
+Il existe un bon decoder ascii : http://www.dcode.fr/ascii.
+
+Il suffit alors d’entrer le code et on obtient :
+
+Le flag de ce challenge est: 2ac376481ae546cd689d5b91275d324e 
+
+ou
+
+Pour décoder en une ligne avec Perl :
+
+echo '4C65...' | perl -nE 'say map(chr, map(hex, unpack("(A2)*", $_)));'
+
+Explication du code :
+
+$_ est remplacé par l’entrée STDIN (la chaîne codée), et unpack("(A2)*)", $_) permet de découper cette chaine en couples de caractères : "4C65" devient ("4C", "65")
+
+La fonction map prend l’argument 2 comme une liste et envoie chaque élement à la fonction indiquée en argument 1, donc :
+map(hex, unpack(...)) prend les couples de caractères et les envoie à hex un par un.
+hex prend une chaine de caractères et retourne la valeur numérique correspondante ("4C" => 0x4c).
+
+Chacune de ces valeurs est envoyée à chr grâce au map externe.
+chr revoie le caractère correspondant à un code ascii (0x4c => ’L’).
+
+Le flag de ce challenge est : 2ac376481ae546cd689d5b91275d324e
+
+ou
+
+Encore une autre variante de la solution, cette fois-ci en Javascript :
+
+var s = ""; // Fill it with given string
+var message = '';
+
+for (var i = 0 ; i < s.length ; i += 2) {
+  var letter = s.substr(i, 2);
+  message += String.fromCharCode(parseInt(letter, 16));  
+}
+
+console.log(message);
+
+Simple et exécutable directement dans la console de votre navigateur.
+
+ou
+
+Un programme en C qui permet facilement de passer l’ASCII en décimal.
+C’est pas la solution la plus simple, ni la plus optimisée, mais ça rappelle les bases
+
+    #include<stdio.h>
+     
+    int     my_putchar(char c)
+    {
+      return (write(1, &c, 1));
+    }
+     
+    void    convert_ascii_to_alpha(char *str)
+    {
+      char  *base;
+      int   i;
+      int   result;
+     
+      result = 0;
+      i = 0;
+      base = "0123456789ABCDEF";
+      while (base[i])
+        {
+          if (base[i] == str[0])
+            result = result + (i * 16);
+          if (base[i] == str[1])
+            result = result + i;
+          i++;
+        }
+      my_putchar(result);
+    }
+     
+    void    main(int argc, char **argv)
+    {
+      int   i;
+     
+      i = 1;
+      while (i < argc)
+        {
+          convert_ascii_to_alpha(argv[i]);
+          i++;
+        }
+    }
+
+Télécharger
+
+Plus qu’à compiler puis taper :
+
+./a.out 4C 65 20 66 6C 61 67 20 64 65 20 63 65 20 63 68 61 6C 6C 65 6E 67 65 20 65 73 74 3A 20 32 61 63 33 37 36 34 38 31 61 65 35 34 36 63 64 36 38 39 64 35 62 39 31 32 37 35 64 33 32 34 65
+Le flag de ce challenge est: 2ac376481ae546cd689d5b91275d324e
+
+ou
+
+Un petit code python pour décoder la chaine automatiquement :
+
+    >>> import binascii
+    >>> msg='4C6520666C6167206465206365206368616C6C656E6765206573743A203261633337363438316165353436636436383964356239313237356433323465'
+    >>> ''.join([binascii.unhexlify(msg[i:i+2]) for i in range(0,122,2)])
+     
+    'Le flag de ce challenge est: 2ac376481ae546cd689d5b91275d324e'
